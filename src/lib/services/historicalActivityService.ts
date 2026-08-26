@@ -59,12 +59,28 @@ export async function getHistoricalParkingActivity(
   dayOfWeek: number,
   hour: number
 ): Promise<HistoricalParkingPattern> {
+  // TODO: Re-enable once a secure server-side aggregation endpoint is available.
+  // The direct Firestore query below requires list access to all completed sessions,
+  // which violates our per-user security rules and throws "Missing or insufficient permissions"
+  // for non-owner queries. Returning an empty pattern for now so the MVP is unblocked.
+  return {
+    dayOfWeek,
+    hour,
+    observationCount: 0,
+    arrivals: 0,
+    departures: 0,
+    averageParkingDuration: null,
+    turnoverRate: null,
+    lastObservedAt: null,
+    uniqueUsers: 0,
+  };
+
+  /* ── Disabled Firestore query (restore via secure backend aggregation) ────────
   const sessionsCol = collection(db, 'parkingSessions');
   const now = new Date();
   const timeWindowMs = HISTORICAL_WINDOW_DAYS * 24 * 60 * 60 * 1000;
   const timeWindowStart = new Date(now.getTime() - timeWindowMs);
   
-  // Query completed sessions within the last 90 days.
   const historicalQuery = query(
     sessionsCol,
     where('status', '==', 'completed'),
@@ -94,7 +110,6 @@ export async function getHistoricalParkingActivity(
       let matchedBucket = false;
       let sessionLastObserved: Date | null = null;
       
-      // Check if arrival falls in the bucket
       if (startedAtDate) {
         const localStart = getLocalDayAndHour(startedAtDate);
         if (localStart.day === dayOfWeek && localStart.hour === hour) {
@@ -104,7 +119,6 @@ export async function getHistoricalParkingActivity(
         }
       }
       
-      // Check if departure falls in the bucket
       if (endedAtDate) {
         const localEnd = getLocalDayAndHour(endedAtDate);
         if (localEnd.day === dayOfWeek && localEnd.hour === hour) {
@@ -126,7 +140,6 @@ export async function getHistoricalParkingActivity(
           }
         }
         
-        // Calculate duration if both exist and endedAt is after startedAt
         if (startedAtDate && endedAtDate && endedAtDate.getTime() >= startedAtDate.getTime()) {
           const durationMs = endedAtDate.getTime() - startedAtDate.getTime();
           durationsMinutes.push(Math.floor(durationMs / 60000));
@@ -174,4 +187,5 @@ export async function getHistoricalParkingActivity(
       uniqueUsers: 0
     };
   }
+  ── End disabled block ─────────────────────────────────────────────────────── */
 }
