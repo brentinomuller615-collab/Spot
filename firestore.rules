@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profile documents
+    match /users/{userId} {
+      // Users can only read their own profile
+      allow get: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can initialize their own profile with 0 points
+      allow create: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.points == 0;
+      
+      // Users can update their email/other profile fields, but NEVER modify their own points field
+      allow update: if request.auth != null
+                    && request.auth.uid == userId
+                    && request.resource.data.points == resource.data.points;
+    }
+
+    // Parking sessions documents
+    match /parkingSessions/{sessionId} {
+      // Allow fetching a single session document the user owns
+      allow get: if request.auth != null
+                 && resource.data.userId == request.auth.uid;
+
+      // Allow listing sessions: the query MUST include a userId == auth.uid filter.
+      // Firestore evaluates list rules without resource, so we validate via query constraints.
+      allow list: if request.auth != null
+                  && request.query.filters.hasAll([['userId', '==', request.auth.uid]]);
+
+      // Users can start/create a session for themselves with status 'active'
+      allow create: if request.auth != null 
+                    && request.resource.data.userId == request.auth.uid 
+                    && request.resource.data.status == 'active';
+      
+      // Users can update/complete their own sessions (cannot change userId)
+      allow update: if request.auth != null 
+                    && resource.data.userId == request.auth.uid 
+                    && request.resource.data.userId == request.auth.uid;
+    }
+  }
+}
