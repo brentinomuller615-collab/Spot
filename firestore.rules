@@ -4,18 +4,32 @@ service cloud.firestore {
     
     // User profile documents
     match /users/{userId} {
-      // Users can only read their own profile
-      allow get: if request.auth != null && request.auth.uid == userId;
+      // Users can read any profile (needed to display usernames and ratings of other spotters)
+      allow read: if request.auth != null;
       
       // Users can initialize their own profile with 0 points
       allow create: if request.auth != null
                     && request.auth.uid == userId
                     && request.resource.data.points == 0;
       
-      // Users can update their email/other profile fields, but NEVER modify their own points field
+      // Users can update their own alias, profile image, and privacy mode. Reputation stats are no longer updated here.
       allow update: if request.auth != null
                     && request.auth.uid == userId
-                    && request.resource.data.points == resource.data.points;
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username', 'usernameNormalized', 'profileImageUrl', 'privacyMode']);
+    }
+
+    // Spotter Ratings documents
+    match /spotterRatings/{ratingId} {
+      allow read: if request.auth != null;
+      // Secure Rating Creation
+      allow create: if request.auth != null 
+                    && request.resource.data.ratingUserId == request.auth.uid
+                    && request.resource.data.ratingUserId != request.resource.data.ratedUserId
+                    && request.resource.data.score >= 1 
+                    && request.resource.data.score <= 5
+                    && ratingId == request.resource.data.handoffId + '_' + request.auth.uid;
+      // No updates or deletes allowed for ratings by users
+      allow update, delete: if false;
     }
 
     // Parking sessions documents
@@ -38,6 +52,75 @@ service cloud.firestore {
       allow update: if request.auth != null 
                     && resource.data.userId == request.auth.uid 
                     && request.resource.data.userId == request.auth.uid;
+    }
+    // Spot Points Accounts (Client read-only. We aggregate client-side for V1)
+    match /spotPointsAccounts/{accountId} {
+      allow read: if request.auth != null && request.auth.uid == accountId;
+      allow write: if false; 
+    }
+
+    // Spot Points Transactions (Immutable ledger)
+    match /spotPointsTransactions/{transactionId} {
+      // Users can read their own transactions
+      allow read: if request.auth != null 
+                  && resource.data.userId == request.auth.uid;
+      
+      // Strict creation rules with cross-document event validation
+      allow create: if request.auth != null 
+                    && transactionId == request.resource.data.type + '_' + request.resource.data.referenceId
+                    && (
+                      // 1. Earning points for your own parking actions
+                      (
+                        request.resource.data.userId == request.auth.uid &&
+                        (
+                          // Parking Contribution: Verify the session exists, belongs to the user, and is active
+                          (
+                            request.resource.data.type == 'parking_contribution' && 
+                            request.resource.data.amount == 10 &&
+                            get(/databases/$(database)/documents/parkingSessions/$(request.resource.data.referenceId)).data.userId == request.auth.uid &&
+                            get(/databases/$(database)/documents/parkingSessions/$(request.resource.data.referenceId)).data.status == 'active'
+                          ) 
+                          ||
+                          // Leaving Report: Verify the session exists, belongs to the user, and is completed
+                          (
+                            request.resource.data.type == 'leaving_report' && 
+                            request.resource.data.amount == 5 &&
+                            get(/databases/$(database)/documents/parkingSessions/$(request.resource.data.referenceId)).data.userId == request.auth.uid &&
+                            get(/databases/$(database)/documents/parkingSessions/$(request.resource.data.referenceId)).data.status == 'completed'
+                          )
+                        )
+                      )
+                      ||
+                      // 2. Receiving points from another user's action (Claimer rewarding Spotter)
+                      (
+                        request.resource.data.userId != request.auth.uid &&
+                        (
+                          // Successful Handoff: 
+                          // - The referenceId must be the handoffId (which is the parking session ID of the spotter).
+                          // - The session must belong to the Spotter (userId).
+                          // - The rating document must exist, created by the Claimer (auth.uid), referencing this handoff.
+                          (
+                            request.resource.data.type == 'successful_handoff' && 
+                            request.resource.data.amount == 25 &&
+                            get(/databases/$(database)/documents/parkingSessions/$(request.resource.data.referenceId)).data.userId == request.resource.data.userId &&
+                            get(/databases/$(database)/documents/spotterRatings/$(request.resource.data.referenceId + '_' + request.auth.uid)).data.ratedUserId == request.resource.data.userId
+                          ) 
+                          ||
+                          // Accuracy Bonus: 
+                          // - Same checks as above, PLUS the rating document must have locationAccurate == true.
+                          (
+                            request.resource.data.type == 'accuracy_bonus' && 
+                            request.resource.data.amount == 5 &&
+                            get(/databases/$(database)/documents/parkingSessions/$(request.resource.data.referenceId)).data.userId == request.resource.data.userId &&
+                            get(/databases/$(database)/documents/spotterRatings/$(request.resource.data.referenceId + '_' + request.auth.uid)).data.ratedUserId == request.resource.data.userId &&
+                            get(/databases/$(database)/documents/spotterRatings/$(request.resource.data.referenceId + '_' + request.auth.uid)).data.locationAccurate == true
+                          )
+                        )
+                      )
+                    );
+                    
+      // No updates or deletes allowed. Ledger is append-only.
+      allow update, delete: if false;
     }
   }
 }

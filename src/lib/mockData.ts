@@ -1,10 +1,12 @@
 import { Destination, ParkingSession, User } from './types';
 
-export const DEFAULT_USER: User = {
-  id: 'usr_1',
-  email: 'parker@spotapp.io',
-  points: 1240,
-  createdAt: '2026-01-15T08:00:00Z',
+export const MOCK_USER: User = {
+  id: 'u_123',
+  points: 1540,
+  username: 'SarahPark',
+  usernameNormalized: 'sarahpark',
+  privacyMode: 'public',
+  createdAt: '2026-01-15T10:30:00Z',
 };
 
 export const MOCK_HISTORY: ParkingSession[] = [

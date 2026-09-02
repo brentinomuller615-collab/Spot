@@ -34,7 +34,7 @@ export default function AuthView() {
         const userCredential = await signUpWithEmailAndPassword(email, password);
         const user = userCredential.user;
         // Create user document in Firestore with 0 points
-        await createUserDoc(user.uid, email);
+        await createUserDoc(user.uid);
       } else {
         // Sign in
         await signInWithEmailAndPassword(email, password);

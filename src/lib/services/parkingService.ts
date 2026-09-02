@@ -6,11 +6,11 @@ import {
   addDoc, 
   doc, 
   updateDoc, 
-  serverTimestamp, 
-  Timestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ParkingSession } from '../types';
+import { awardParkingContribution, awardLeavingReport } from './pointsService';
 
 export function subscribeToActiveSession(uid: string, callback: (session: ParkingSession | null) => void) {
   const q = query(
@@ -117,15 +117,21 @@ export async function startParkingSession(
     result.municipalParkingId = municipalParkingId;
   }
 
+  // Hook into Spot Points economy: Award parking contribution points
+  await awardParkingContribution(uid, docRef.id).catch(console.error);
+
   return result;
 }
 
 
-export async function completeParkingSession(sessionId: string) {
+export async function completeParkingSession(userId: string, sessionId: string) {
   const sessionDocRef = doc(db, 'parkingSessions', sessionId);
   await updateDoc(sessionDocRef, {
     status: 'completed',
     endedAt: serverTimestamp(),
-    pointsAwarded: 10, // In production, this would be computed/validated by Firestore rules or Cloud Functions
+    pointsAwarded: 15, // 10 for parking + 5 for leaving
   });
+
+  // Hook into Spot Points economy: Award leaving report points
+  await awardLeavingReport(userId, sessionId).catch(console.error);
 }

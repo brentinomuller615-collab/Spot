@@ -10,8 +10,15 @@ import { getHistoricalParkingActivity, HistoricalParkingPattern } from '../lib/s
 import { getParkingLikelihood, ParkingLikelihoodResult } from '../lib/services/parkingLikelihoodService';
 import { calculateDistanceMeters } from '../lib/utils/geo';
 import '@maptiler/sdk/dist/maptiler-sdk.css';
+import DealsButton from './DealsButton';
+import HandoffModal, { HandoffOpportunity } from './HandoffModal';
+import { getPublicSpotterIdentity } from '../lib/services/ratingService';
 
-export default function MapView() {
+interface MapViewProps {
+  onOpenDeals?: () => void;
+}
+
+export default function MapView({ onOpenDeals }: MapViewProps) {
   const { currentLocation, selectedDestination, activeSession, refreshLocation } = useParkingSession();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
@@ -30,6 +37,11 @@ export default function MapView() {
   const [liveActivityLoading, setLiveActivityLoading] = useState<boolean>(false);
   const [historicalActivity, setHistoricalActivity] = useState<HistoricalParkingPattern | null>(null);
   const [historicalActivityLoading, setHistoricalActivityLoading] = useState<boolean>(false);
+
+  // Handoff functionality
+  const [mockOpportunities, setMockOpportunities] = useState<HandoffOpportunity[]>([]);
+  const mockMarkersRef = useRef<maptilersdk.Marker[]>([]);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<HandoffOpportunity | null>(null);
 
 
 
@@ -75,6 +87,92 @@ export default function MapView() {
       setInitError('Failed to initialize the interactive map.');
     }
   }, [apiKey]);
+
+  // Generate Mock Leaving Spots once map is ready and location is found
+  useEffect(() => {
+    if (!map || !currentLocation || mockOpportunities.length > 0) return;
+    
+    // Generate 2 mock spots nearby
+    const mock1: HandoffOpportunity = {
+      id: 'mock-handoff-1',
+      latitude: currentLocation.latitude + 0.001,
+      longitude: currentLocation.longitude + 0.001,
+      leavingIn: '2:14',
+      mockRatingAverage: 4.8,
+      mockAccuracyPercentage: 96,
+      spotter: {
+        id: 'mock-user-1',
+        points: 50,
+        username: 'FastParker',
+        usernameNormalized: 'fastparker',
+        privacyMode: 'public',
+        createdAt: new Date().toISOString()
+      }
+    };
+
+    const mock2: HandoffOpportunity = {
+      id: 'mock-handoff-2',
+      latitude: currentLocation.latitude - 0.001,
+      longitude: currentLocation.longitude + 0.0015,
+      leavingIn: '0:45',
+      mockRatingAverage: 4.2,
+      mockAccuracyPercentage: 80,
+      spotter: {
+        id: 'mock-user-2',
+        points: 120,
+        username: 'NinjaParker',
+        privacyMode: 'anonymous',
+        createdAt: new Date().toISOString()
+      }
+    };
+    
+    setMockOpportunities([mock1, mock2]);
+  }, [map, currentLocation, mockOpportunities.length]);
+
+  // Render Mock Spots
+  useEffect(() => {
+    if (!map) return;
+    
+    // Clear old
+    mockMarkersRef.current.forEach(m => m.remove());
+    mockMarkersRef.current = [];
+
+    mockOpportunities.forEach(opp => {
+      const el = document.createElement('div');
+      el.className = 'cursor-pointer transform hover:scale-110 transition-transform';
+      el.style.zIndex = '4';
+      
+      const identity = getPublicSpotterIdentity(
+        opp.spotter,
+        opp.mockRatingAverage || 0,
+        opp.mockAccuracyPercentage || 0
+      );
+      const isHidden = !identity;
+      const displayInitial = isHidden ? '?' : (identity.displayName.charAt(0).toUpperCase() || 'S');
+
+      el.innerHTML = `
+        <div class="relative flex items-center justify-center">
+          <div class="absolute -bottom-1 w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
+          <div class="bg-slate-900 border-2 border-amber-500 rounded-full w-8 h-8 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/20">
+            <span class="text-xs font-bold">${displayInitial}</span>
+          </div>
+          <div class="absolute -top-6 whitespace-nowrap bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+            ${opp.leavingIn}
+          </div>
+        </div>
+      `;
+
+      el.addEventListener('click', () => {
+        setSelectedOpportunity(opp);
+      });
+
+      const marker = new maptilersdk.Marker({ element: el })
+        .setLngLat([opp.longitude, opp.latitude])
+        .addTo(map);
+      
+      mockMarkersRef.current.push(marker);
+    });
+  }, [map, mockOpportunities]);
 
   // Update User Current Location Marker
   useEffect(() => {
@@ -619,7 +717,11 @@ export default function MapView() {
 
 
       {/* Floating Controls */}
-      <div className="absolute top-32 right-4 z-10 flex flex-col space-y-2">
+      <div className="absolute top-32 right-4 z-10 flex flex-col space-y-4">
+        {onOpenDeals && (
+          <DealsButton onClick={onOpenDeals} />
+        )}
+        
         {/* Recenter Button */}
         <button
           onClick={handleRecenter}
@@ -638,6 +740,18 @@ export default function MapView() {
           <span className="text-amber-400 text-xs">⚠</span>
           <span className="text-xs text-slate-400">{municipalError}</span>
         </div>
+      )}
+
+      {/* Handoff Modal */}
+      {selectedOpportunity && (
+        <HandoffModal
+          opportunity={selectedOpportunity}
+          onClose={() => setSelectedOpportunity(null)}
+          onClaim={() => {
+            // Remove the claimed opportunity from the map
+            setMockOpportunities(prev => prev.filter(o => o.id !== selectedOpportunity.id));
+          }}
+        />
       )}
     </div>
   );

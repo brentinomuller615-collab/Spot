@@ -3,7 +3,7 @@
 import React from 'react';
 import { useParkingSession } from '../hooks/useParkingSession';
 
-export type TabId = 'map' | 'history' | 'profile';
+export type TabId = 'map' | 'history' | 'profile' | 'pointsHistory' | 'rewards';
 
 interface NavBarProps {
   activeTab: TabId;

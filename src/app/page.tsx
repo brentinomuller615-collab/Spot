@@ -8,11 +8,15 @@ import HistoryView from '../components/HistoryView';
 import ProfileView from '../components/ProfileView';
 import NavBar, { TabId } from '../components/NavBar';
 import AuthView from '../components/AuthView';
+import DealsFeed from '../components/DealsFeed';
+import PointsHistoryView from '../components/PointsHistoryView';
+import RewardsView from '../components/RewardsView';
 import { useParkingSession } from '../hooks/useParkingSession';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabId>('map');
-  const { user, authLoading } = useParkingSession();
+  const [isDealsOpen, setIsDealsOpen] = useState(false);
+  const { user, authLoading, currentLocation, selectDestination } = useParkingSession();
 
   const handleNavigateToMap = () => {
     setActiveTab('map');
@@ -81,7 +85,7 @@ export default function Home() {
         </div>
 
         {/* Header Section */}
-        {activeTab !== 'map' && (
+        {['history', 'profile'].includes(activeTab) && (
           <header className="py-4 px-6 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center z-20 shadow-sm">
             <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center space-x-1.5">
               <span className="text-blue-600 dark:text-blue-500">S</span>
@@ -100,15 +104,46 @@ export default function Home() {
           {activeTab === 'map' && (
             <div className="w-full h-full relative">
               <SearchBar />
-              <MapView />
+              <MapView onOpenDeals={() => setIsDealsOpen(true)} />
               <ParkingFlow />
+              
+              {isDealsOpen && currentLocation && (
+                <DealsFeed 
+                  latitude={currentLocation.latitude}
+                  longitude={currentLocation.longitude}
+                  userId={user.id}
+                  onClose={() => setIsDealsOpen(false)}
+                  onNavigate={(lat, lng, name) => {
+                    setIsDealsOpen(false);
+                    selectDestination({
+                      id: `business-${Date.now()}`,
+                      name: name,
+                      latitude: lat,
+                      longitude: lng,
+                      zones: [] // Let the parking likelihood service handle zones dynamically
+                    });
+                  }}
+                />
+              )}
             </div>
           )}
 
           {activeTab === 'history' && <HistoryView />}
 
           {activeTab === 'profile' && (
-            <ProfileView onNavigateToMap={handleNavigateToMap} />
+            <ProfileView 
+              onNavigateToMap={handleNavigateToMap}
+              onNavigateToPointsHistory={() => setActiveTab('pointsHistory')}
+              onNavigateToRewards={() => setActiveTab('rewards')}
+            />
+          )}
+
+          {activeTab === 'pointsHistory' && (
+            <PointsHistoryView onBack={() => setActiveTab('profile')} />
+          )}
+
+          {activeTab === 'rewards' && (
+            <RewardsView onBack={() => setActiveTab('profile')} />
           )}
 
         </div>

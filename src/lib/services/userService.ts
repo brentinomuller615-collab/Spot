@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { User } from '../types';
 
@@ -9,8 +9,11 @@ export function subscribeToUserDoc(uid: string, callback: (user: User | null) =>
       const data = docSnap.data();
       callback({
         id: docSnap.id,
-        email: data.email || '',
         points: data.points || 0,
+        username: data.username,
+        usernameNormalized: data.usernameNormalized,
+        profileImageUrl: data.profileImageUrl,
+        privacyMode: data.privacyMode || 'public',
         createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       });
     } else {
@@ -19,15 +22,46 @@ export function subscribeToUserDoc(uid: string, callback: (user: User | null) =>
   });
 }
 
-export async function createUserDoc(uid: string, email: string) {
+export async function createUserDoc(uid: string) {
   const userDocRef = doc(db, 'users', uid);
   // Only create if it doesn't already exist
   const docSnap = await getDoc(userDocRef);
   if (!docSnap.exists()) {
     await setDoc(userDocRef, {
-      email,
       points: 0,
+      privacyMode: 'public', // sensible default
       createdAt: serverTimestamp(),
     });
   }
+}
+
+export async function checkUsernameAvailability(username: string): Promise<boolean> {
+  const usernameNormalized = username.trim().toLowerCase();
+  if (!usernameNormalized) return false;
+  
+  const usersRef = collection(db, 'users');
+  const q = query(usersRef, where('usernameNormalized', '==', usernameNormalized));
+  const querySnapshot = await getDocs(q);
+  
+  return querySnapshot.empty; // true if available
+}
+
+export async function updateUsername(uid: string, username: string): Promise<boolean> {
+  const isAvailable = await checkUsernameAvailability(username);
+  if (!isAvailable) return false;
+
+  const userDocRef = doc(db, 'users', uid);
+  await updateDoc(userDocRef, {
+    username: username.trim(),
+    usernameNormalized: username.trim().toLowerCase(),
+  });
+  
+  return true;
+}
+
+export async function updatePrivacyMode(uid: string, privacyMode: 'public' | 'anonymous' | 'hidden') {
+  const userDocRef = doc(db, 'users', uid);
+  await updateDoc(userDocRef, {
+    privacyMode
+  });
 }

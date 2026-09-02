@@ -14,6 +14,7 @@ import { getCurrentPosition, GeolocationResult } from '../lib/services/geolocati
 
 interface ParkingContextType {
   user: User | null;
+  authEmail: string | null;
   authLoading: boolean;
   activeSession: ParkingSession | null;
   history: ParkingSession[];
@@ -106,7 +107,6 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser({
           id: firebaseUser.uid,
-          email: firebaseUser.email || '',
           points: 0,
           createdAt: new Date().toISOString(),
         });
@@ -179,7 +179,8 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
     // Await the Firestore write directly — same pattern as startParking.
     // Do NOT rely on onSnapshot to clear activeSession; do it immediately
     // on success so the UI never shows a stale "I'm Leaving" button.
-    await completeParkingSession(activeSession.id);
+    if (!user) return;
+    await completeParkingSession(user.id, activeSession.id);
 
     // Immediately clear local session and show points notification.
     // onSnapshot will eventually sync but we don't wait for it.
@@ -195,6 +196,7 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
     <ParkingContext.Provider
       value={{
         user,
+        authEmail: firebaseUser?.email || null,
         authLoading,
         activeSession,
         history,
