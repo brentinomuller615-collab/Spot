@@ -9,8 +9,8 @@ export interface HandoffOpportunity {
   latitude: number;
   longitude: number;
   leavingIn: string; // e.g., "2:14"
-  mockRatingAverage?: number; // [MOCK] For testing without backend
-  mockAccuracyPercentage?: number; // [MOCK] For testing without backend
+  ratingAverage?: number;
+  accuracyPercentage?: number;
 }
 
 interface HandoffModalProps {
@@ -28,8 +28,8 @@ export default function HandoffModal({ opportunity, onClose, onClaim }: HandoffM
 
   const identity = getPublicSpotterIdentity(
     opportunity.spotter,
-    opportunity.mockRatingAverage || 0,
-    opportunity.mockAccuracyPercentage || 0
+    opportunity.ratingAverage || 0,
+    opportunity.accuracyPercentage || 0
   );
 
   const handleClaim = () => {

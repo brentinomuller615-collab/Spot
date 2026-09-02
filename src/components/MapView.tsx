@@ -41,8 +41,8 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const [historicalActivityLoading, setHistoricalActivityLoading] = useState<boolean>(false);
 
   // Handoff functionality
-  const [mockOpportunities, setMockOpportunities] = useState<HandoffOpportunity[]>([]);
-  const mockMarkersRef = useRef<maptilersdk.Marker[]>([]);
+  const [liveOpportunities, setLiveOpportunities] = useState<HandoffOpportunity[]>([]);
+  const liveMarkersRef = useRef<maptilersdk.Marker[]>([]);
   const [selectedOpportunity, setSelectedOpportunity] = useState<HandoffOpportunity | null>(null);
 
 
@@ -112,8 +112,8 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
               latitude: session.latitude,
               longitude: session.longitude,
               leavingIn: session.estimatedDuration || 'Skip',
-              mockRatingAverage: rep.ratingAverage,
-              mockAccuracyPercentage: rep.accuracyPercentage,
+              ratingAverage: rep.ratingAverage,
+              accuracyPercentage: rep.accuracyPercentage,
               spotter: spotter,
             };
             return opp;
@@ -124,29 +124,29 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         })
       );
       
-      setMockOpportunities(opportunities.filter((o): o is HandoffOpportunity => o !== null));
+      setLiveOpportunities(opportunities.filter((o): o is HandoffOpportunity => o !== null));
     });
 
     return () => unsub();
   }, [map, currentLocation, user?.id]);
 
-  // Render Mock Spots
+  // Render Live Spots
   useEffect(() => {
     if (!map) return;
     
     // Clear old
-    mockMarkersRef.current.forEach(m => m.remove());
-    mockMarkersRef.current = [];
+    liveMarkersRef.current.forEach(m => m.remove());
+    liveMarkersRef.current = [];
 
-    mockOpportunities.forEach(opp => {
+    liveOpportunities.forEach(opp => {
       const el = document.createElement('div');
       el.className = 'cursor-pointer transform hover:scale-110 transition-transform';
       el.style.zIndex = '4';
       
       const identity = getPublicSpotterIdentity(
         opp.spotter,
-        opp.mockRatingAverage || 0,
-        opp.mockAccuracyPercentage || 0
+        opp.ratingAverage || 0,
+        opp.accuracyPercentage || 0
       );
       const isHidden = !identity;
       const displayInitial = isHidden ? '?' : (identity.displayName.charAt(0).toUpperCase() || 'S');
@@ -171,9 +171,9 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         .setLngLat([opp.longitude, opp.latitude])
         .addTo(map);
       
-      mockMarkersRef.current.push(marker);
+      liveMarkersRef.current.push(marker);
     });
-  }, [map, mockOpportunities]);
+  }, [map, liveOpportunities]);
 
   // Update User Current Location Marker
   useEffect(() => {
@@ -750,7 +750,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
           onClose={() => setSelectedOpportunity(null)}
           onClaim={() => {
             // Remove the claimed opportunity from the map
-            setMockOpportunities(prev => prev.filter(o => o.id !== selectedOpportunity.id));
+            setLiveOpportunities(prev => prev.filter(o => o.id !== selectedOpportunity.id));
           }}
         />
       )}

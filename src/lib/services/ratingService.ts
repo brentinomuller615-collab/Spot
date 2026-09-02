@@ -80,10 +80,17 @@ export async function getSpotterReputation(userId: string): Promise<{
   // SpotsReported would ideally come from the number of completed parking sessions.
   // For V1, we estimate spotsReported >= ratingCount. (Usually we'd count sessions).
   // Let's query completed sessions to get actual spotsReported.
-  const sessionsCol = collection(db, 'parkingSessions');
-  const sessionsQ = query(sessionsCol, where('userId', '==', userId), where('status', '==', 'completed'));
-  const sessionsSnap = await getDocs(sessionsQ);
-  const spotsReported = sessionsSnap.size;
+  let spotsReported = ratingCount;
+  try {
+    const sessionsCol = collection(db, 'parkingSessions');
+    const sessionsQ = query(sessionsCol, where('userId', '==', userId), where('status', '==', 'completed'));
+    const sessionsSnap = await getDocs(sessionsQ);
+    spotsReported = sessionsSnap.size;
+  } catch (err) {
+    // If permission denied (e.g., trying to read another user's completed sessions which are private),
+    // fallback to ratingCount.
+    console.warn('Could not read completed sessions for spotsReported, falling back to ratingCount.');
+  }
 
   const accuracyPercentage = spotsReported > 0 
     ? Math.round((successfulHandoffs / spotsReported) * 100) 
