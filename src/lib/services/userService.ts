@@ -41,26 +41,41 @@ export async function checkUsernameAvailability(username: string, currentUid?: s
   
   const usersRef = collection(db, 'users');
   const q = query(usersRef, where('usernameNormalized', '==', usernameNormalized));
-  const querySnapshot = await getDocs(q);
   
-  // Available if no one has it, OR if the only person who has it is the current user
-  if (querySnapshot.empty) return true;
-  if (currentUid && querySnapshot.docs.length === 1 && querySnapshot.docs[0].id === currentUid) return true;
-  
-  return false;
+  try {
+    const querySnapshot = await getDocs(q);
+    
+    // Available if no one has it, OR if the only person who has it is the current user
+    if (querySnapshot.empty) return true;
+    if (currentUid && querySnapshot.docs.length === 1 && querySnapshot.docs[0].id === currentUid) return true;
+    
+    return false;
+  } catch (error) {
+    console.error(`[DEBUG] checkUsernameAvailability THREW AN ERROR:`, error);
+    throw error;
+  }
 }
 
 export async function updateUsername(uid: string, username: string): Promise<boolean> {
+  console.log(`[DEBUG] updateUsername called with UID: ${uid}, Alias: "${username}"`);
   const isAvailable = await checkUsernameAvailability(username, uid);
+  console.log(`[DEBUG] checkUsernameAvailability returned: ${isAvailable}`);
   if (!isAvailable) return false;
 
   const userDocRef = doc(db, 'users', uid);
-  await updateDoc(userDocRef, {
-    username: username.trim(),
-    usernameNormalized: username.trim().toLowerCase(),
-  });
+  console.log(`[DEBUG] Document path: users/${uid}`);
   
-  return true;
+  try {
+    await updateDoc(userDocRef, {
+      username: username.trim(),
+      usernameNormalized: username.trim().toLowerCase(),
+    });
+    console.log(`[DEBUG] updateDoc succeeded for alias: "${username}"`);
+    return true;
+  } catch (error) {
+    console.error(`[DEBUG] updateDoc THREW AN ERROR:`, error);
+    return false;
+  }
 }
 
 export async function updatePrivacyMode(uid: string, privacyMode: 'public' | 'anonymous' | 'hidden') {

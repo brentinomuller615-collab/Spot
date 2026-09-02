@@ -45,13 +45,19 @@ export default function ProfileView({ onNavigateToMap, onNavigateToPointsHistory
     setAliasError('');
     setIsSavingAlias(true);
     
-    const success = await updateUsername(user.id, aliasInput);
-    if (success) {
-      setIsEditingAlias(false);
-    } else {
-      setAliasError('Username already taken');
+    try {
+      const success = await updateUsername(user.id, aliasInput);
+      if (success) {
+        setIsEditingAlias(false);
+      } else {
+        setAliasError('Username already taken');
+      }
+    } catch (err: any) {
+      console.error("Save alias error:", err);
+      setAliasError(err.message || 'An error occurred while saving.');
+    } finally {
+      setIsSavingAlias(false);
     }
-    setIsSavingAlias(false);
   };
 
   return (

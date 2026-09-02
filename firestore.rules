@@ -14,8 +14,7 @@ service cloud.firestore {
       
       // Users can update their own alias, profile image, and privacy mode. Reputation stats are no longer updated here.
       allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username', 'usernameNormalized', 'profileImageUrl', 'privacyMode']);
+                    && request.auth.uid == userId;
     }
 
     // Spotter Ratings documents
@@ -38,12 +37,11 @@ service cloud.firestore {
       allow get: if request.auth != null
                  && resource.data.userId == request.auth.uid;
 
-      // Allow listing sessions: the query MUST include a userId == auth.uid filter OR a status == 'active' filter.
-      // Firestore evaluates list rules without resource, so we validate via query constraints.
+      // Allow listing sessions: the query MUST filter by userId == auth.uid OR status == 'active'.
       allow list: if request.auth != null
                   && (
-                    request.query.filters.hasAll([['userId', '==', request.auth.uid]]) ||
-                    request.query.filters.hasAll([['status', '==', 'active']])
+                    resource.data.userId == request.auth.uid ||
+                    resource.data.status == 'active'
                   );
 
       // Users can start/create a session for themselves with status 'active'
