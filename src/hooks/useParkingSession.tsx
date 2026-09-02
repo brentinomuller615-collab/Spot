@@ -48,28 +48,8 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
     name: string;
   } | null>(null);
 
-  // Fetch user's real location once on load
-  useEffect(() => {
-    let active = true;
-    const fetchInitialLocation = async () => {
-      try {
-        const pos = await getCurrentPosition();
-        if (active) {
-          setCurrentLocation({
-            latitude: pos.latitude,
-            longitude: pos.longitude,
-            name: 'Current Location',
-          });
-        }
-      } catch (err) {
-        console.warn('Failed to fetch initial location on load:', err);
-      }
-    };
-    fetchInitialLocation();
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Auto-fetching initial location is REMOVED to fix mobile Safari permission prompt blocking.
+  // The location will only be requested via a direct user gesture (e.g. clicking "I'm Parked" or "Recenter").
 
   const refreshLocation = async (): Promise<GeolocationResult> => {
     const pos = await getCurrentPosition();
