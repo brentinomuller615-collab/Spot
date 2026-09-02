@@ -40,6 +40,38 @@ export function subscribeToActiveSession(uid: string, callback: (session: Parkin
   });
 }
 
+export function subscribeToGlobalActiveSessions(currentUid: string | undefined, callback: (sessions: ParkingSession[]) => void) {
+  // Query all active sessions globally
+  const q = query(
+    collection(db, 'parkingSessions'),
+    where('status', '==', 'active')
+  );
+
+  return onSnapshot(q, (querySnapshot) => {
+    const sessions: ParkingSession[] = [];
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      // Filter out the current user's own session on the client side
+      // since Firestore doesn't support logical OR/NOT easily in rules/queries here
+      if (data.userId !== currentUid) {
+        sessions.push({
+          id: docSnap.id,
+          userId: data.userId,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          locationName: data.locationName,
+          startedAt: data.startedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          estimatedDuration: data.estimatedDuration,
+          status: data.status,
+          pointsAwarded: data.pointsAwarded || 0,
+          municipalParkingId: data.municipalParkingId,
+        });
+      }
+    });
+    callback(sessions);
+  });
+}
+
 export function subscribeToParkingHistory(uid: string, callback: (history: ParkingSession[]) => void) {
   const q = query(
     collection(db, 'parkingSessions'),

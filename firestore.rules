@@ -38,10 +38,13 @@ service cloud.firestore {
       allow get: if request.auth != null
                  && resource.data.userId == request.auth.uid;
 
-      // Allow listing sessions: the query MUST include a userId == auth.uid filter.
+      // Allow listing sessions: the query MUST include a userId == auth.uid filter OR a status == 'active' filter.
       // Firestore evaluates list rules without resource, so we validate via query constraints.
       allow list: if request.auth != null
-                  && request.query.filters.hasAll([['userId', '==', request.auth.uid]]);
+                  && (
+                    request.query.filters.hasAll([['userId', '==', request.auth.uid]]) ||
+                    request.query.filters.hasAll([['status', '==', 'active']])
+                  );
 
       // Users can start/create a session for themselves with status 'active'
       allow create: if request.auth != null 

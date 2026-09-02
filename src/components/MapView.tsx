@@ -12,14 +12,16 @@ import { calculateDistanceMeters } from '../lib/utils/geo';
 import '@maptiler/sdk/dist/maptiler-sdk.css';
 import DealsButton from './DealsButton';
 import HandoffModal, { HandoffOpportunity } from './HandoffModal';
-import { getPublicSpotterIdentity } from '../lib/services/ratingService';
+import { getPublicSpotterIdentity, getSpotterReputation } from '../lib/services/ratingService';
+import { getUserProfile } from '../lib/services/userService';
+import { subscribeToGlobalActiveSessions } from '../lib/services/parkingService';
 
 interface MapViewProps {
   onOpenDeals?: () => void;
 }
 
 export default function MapView({ onOpenDeals }: MapViewProps) {
-  const { currentLocation, selectedDestination, activeSession, refreshLocation } = useParkingSession();
+  const { user, currentLocation, selectedDestination, activeSession, refreshLocation } = useParkingSession();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const [map, setMap] = useState<maptilersdk.Map | null>(null);
@@ -88,46 +90,45 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     }
   }, [apiKey]);
 
-  // Generate Mock Leaving Spots once map is ready and location is found
+  // Subscribe to real active parking sessions globally for handoffs
   useEffect(() => {
-    if (!map || !currentLocation || mockOpportunities.length > 0) return;
+    if (!map || !currentLocation) return;
     
-    // Generate 2 mock spots nearby
-    const mock1: HandoffOpportunity = {
-      id: 'mock-handoff-1',
-      latitude: currentLocation.latitude + 0.001,
-      longitude: currentLocation.longitude + 0.001,
-      leavingIn: '2:14',
-      mockRatingAverage: 4.8,
-      mockAccuracyPercentage: 96,
-      spotter: {
-        id: 'mock-user-1',
-        points: 50,
-        username: 'FastParker',
-        usernameNormalized: 'fastparker',
-        privacyMode: 'public',
-        createdAt: new Date().toISOString()
-      }
-    };
+    // Subscribe to all active sessions (excluding our own)
+    const unsub = subscribeToGlobalActiveSessions(user?.id, async (activeSessions) => {
+      // For each session, fetch the spotter's profile and reputation
+      const opportunities = await Promise.all(
+        activeSessions.map(async (session) => {
+          try {
+            // Fetch the spotter's profile to get privacy mode, alias, etc.
+            const spotter = await getUserProfile(session.userId);
+            if (!spotter) return null;
+            
+            // Fetch reputation stats
+            const rep = await getSpotterReputation(session.userId);
+            
+            const opp: HandoffOpportunity = {
+              id: session.id, // The active session ID
+              latitude: session.latitude,
+              longitude: session.longitude,
+              leavingIn: session.estimatedDuration || 'Skip',
+              mockRatingAverage: rep.ratingAverage,
+              mockAccuracyPercentage: rep.accuracyPercentage,
+              spotter: spotter,
+            };
+            return opp;
+          } catch (err) {
+            console.error('Failed to resolve spotter profile for active session:', err);
+            return null;
+          }
+        })
+      );
+      
+      setMockOpportunities(opportunities.filter((o): o is HandoffOpportunity => o !== null));
+    });
 
-    const mock2: HandoffOpportunity = {
-      id: 'mock-handoff-2',
-      latitude: currentLocation.latitude - 0.001,
-      longitude: currentLocation.longitude + 0.0015,
-      leavingIn: '0:45',
-      mockRatingAverage: 4.2,
-      mockAccuracyPercentage: 80,
-      spotter: {
-        id: 'mock-user-2',
-        points: 120,
-        username: 'NinjaParker',
-        privacyMode: 'anonymous',
-        createdAt: new Date().toISOString()
-      }
-    };
-    
-    setMockOpportunities([mock1, mock2]);
-  }, [map, currentLocation, mockOpportunities.length]);
+    return () => unsub();
+  }, [map, currentLocation, user?.id]);
 
   // Render Mock Spots
   useEffect(() => {
