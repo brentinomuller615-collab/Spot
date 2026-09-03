@@ -92,7 +92,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
   // Subscribe to real active parking sessions globally for handoffs
   useEffect(() => {
-    if (!map || !currentLocation) return;
+    if (!map) return;
     
     // Subscribe to all active sessions (excluding our own)
     const unsub = subscribeToGlobalActiveSessions(user?.id, async (activeSessions) => {
@@ -128,7 +128,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     });
 
     return () => unsub();
-  }, [map, currentLocation, user?.id]);
+  }, [map, user?.id]);
 
   // Render Live Spots
   useEffect(() => {
