@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useParkingSession } from '../hooks/useParkingSession';
 import { signOutUser } from '../lib/services/authService';
 import { updateUsername, updatePrivacyMode } from '../lib/services/userService';
-import { getSpotterReputation } from '../lib/services/ratingService';
 import { getSpotPointsBalance } from '../lib/services/pointsService';
 import { PrivacyMode } from '../lib/types';
 
@@ -21,19 +20,10 @@ export default function ProfileView({ onNavigateToMap, onNavigateToPointsHistory
   const [aliasError, setAliasError] = useState('');
   const [isSavingAlias, setIsSavingAlias] = useState(false);
   
-  const [reputation, setReputation] = useState({
-    ratingAverage: 0,
-    ratingCount: 0,
-    accuracyPercentage: 0,
-    spotsReported: 0,
-    successfulHandoffs: 0
-  });
-
   const [spotPointsBalance, setSpotPointsBalance] = useState(0);
 
   useEffect(() => {
     if (user?.id) {
-      getSpotterReputation(user.id).then(setReputation).catch(console.error);
       getSpotPointsBalance(user.id).then(setSpotPointsBalance).catch(console.error);
     }
   }, [user?.id]);
@@ -134,33 +124,6 @@ export default function ProfileView({ onNavigateToMap, onNavigateToPointsHistory
         </div>
       )}
 
-      {/* Spotter Stats */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 p-5 rounded-3xl shadow-sm mb-6">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Spotter Reputation</h3>
-        <div className="grid grid-cols-2 gap-y-4 gap-x-2">
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rating</p>
-            <p className="text-xl font-black text-slate-800 dark:text-slate-100 mt-1 flex items-center space-x-1">
-              <span>⭐ {reputation.ratingAverage.toFixed(1)}</span>
-              <span className="text-xs text-slate-400 font-normal">({reputation.ratingCount})</span>
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Reliability</p>
-            <p className="text-xl font-black text-slate-800 dark:text-slate-100 mt-1 flex items-center space-x-1">
-              <span>🎯 {reputation.accuracyPercentage}%</span>
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Spots Reported</p>
-            <p className="text-xl font-black text-slate-800 dark:text-slate-100 mt-1">{reputation.spotsReported}</p>
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Successful Handoffs</p>
-            <p className="text-xl font-black text-slate-800 dark:text-slate-100 mt-1">{reputation.successfulHandoffs}</p>
-          </div>
-        </div>
-      </div>
 
       {/* Privacy Settings */}
       <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 p-5 rounded-3xl shadow-sm mb-6 space-y-4">
@@ -176,8 +139,8 @@ export default function ProfileView({ onNavigateToMap, onNavigateToPointsHistory
             >
               <span className={`text-sm font-bold capitalize ${user?.privacyMode === mode ? 'text-blue-700 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>{mode}</span>
               <span className="text-[11px] text-slate-500 mt-1">
-                {mode === 'public' && "Your alias, picture, and rating are shown."}
-                {mode === 'anonymous' && "Visible as 'Anonymous Spotter' with your rating."}
+                {mode === 'public' && "Your alias and picture are shown."}
+                {mode === 'anonymous' && "Visible as 'Anonymous'."}
                 {mode === 'hidden' && "Your identity is completely hidden."}
               </span>
             </button>

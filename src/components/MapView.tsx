@@ -12,7 +12,7 @@ import { calculateDistanceMeters } from '../lib/utils/geo';
 import '@maptiler/sdk/dist/maptiler-sdk.css';
 import DealsButton from './DealsButton';
 import HandoffModal, { HandoffOpportunity } from './HandoffModal';
-import { getPublicSpotterIdentity, getSpotterReputation } from '../lib/services/ratingService';
+import { getPublicSpotterIdentity } from '../lib/services/ratingService';
 import { getUserProfile } from '../lib/services/userService';
 import { subscribeToGlobalActiveSessions } from '../lib/services/parkingService';
 
@@ -104,16 +104,11 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
             const spotter = await getUserProfile(session.userId);
             if (!spotter) return null;
             
-            // Fetch reputation stats
-            const rep = await getSpotterReputation(session.userId);
-            
             const opp: HandoffOpportunity = {
               id: session.id, // The active session ID
               latitude: session.latitude,
               longitude: session.longitude,
-              leavingIn: session.estimatedDuration || 'Skip',
-              ratingAverage: rep.ratingAverage,
-              accuracyPercentage: rep.accuracyPercentage,
+              leavingIn: session.estimatedDuration || 'Unknown',
               spotter: spotter,
             };
             return opp;
@@ -144,9 +139,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       el.style.zIndex = '4';
       
       const identity = getPublicSpotterIdentity(
-        opp.spotter,
-        opp.ratingAverage || 0,
-        opp.accuracyPercentage || 0
+        opp.spotter
       );
       const isHidden = !identity;
       const displayInitial = isHidden ? '?' : (identity.displayName.charAt(0).toUpperCase() || 'S');
