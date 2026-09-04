@@ -37,11 +37,11 @@ service cloud.firestore {
       allow get: if request.auth != null
                  && resource.data.userId == request.auth.uid;
 
-      // Allow listing sessions: the query MUST filter by userId == auth.uid OR status == 'active'.
+      // Allow listing sessions: the query MUST filter by userId == auth.uid OR status == 'active' or 'just_left'.
       allow list: if request.auth != null
                   && (
                     resource.data.userId == request.auth.uid ||
-                    resource.data.status == 'active'
+                    resource.data.status in ['active', 'just_left']
                   );
 
       // Users can start/create a session for themselves with status 'active'
