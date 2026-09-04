@@ -44,7 +44,7 @@ export function subscribeToGlobalActiveSessions(currentUid: string | undefined, 
   // Query all active sessions globally
   const q = query(
     collection(db, 'parkingSessions'),
-    where('status', '==', 'active')
+    where('status', 'in', ['active', 'just_left'])
   );
 
   return onSnapshot(q, (querySnapshot) => {
@@ -54,6 +54,16 @@ export function subscribeToGlobalActiveSessions(currentUid: string | undefined, 
       // Filter out the current user's own session on the client side
       // since Firestore doesn't support logical OR/NOT easily in rules/queries here
       if (data.userId !== currentUid) {
+        
+        // Filter out expired just_left sessions to guarantee they disappear on reload
+        // even if the driver's app closed before their setTimeout completed.
+        if (data.status === 'just_left' && data.endedAt) {
+          const endedAtTime = data.endedAt.toDate?.()?.getTime() || 0;
+          if (Date.now() - endedAtTime > 5 * 60 * 1000) {
+            return; // Skip stale just_left session
+          }
+        }
+
         sessions.push({
           id: docSnap.id,
           userId: data.userId,
@@ -76,7 +86,7 @@ export function subscribeToParkingHistory(uid: string, callback: (history: Parki
   const q = query(
     collection(db, 'parkingSessions'),
     where('userId', '==', uid),
-    where('status', '==', 'completed')
+    where('status', 'in', ['completed', 'just_left'])
   );
 
   return onSnapshot(q, (querySnapshot) => {
@@ -159,11 +169,16 @@ export async function startParkingSession(
 export async function completeParkingSession(userId: string, sessionId: string) {
   const sessionDocRef = doc(db, 'parkingSessions', sessionId);
   await updateDoc(sessionDocRef, {
-    status: 'completed',
+    status: 'just_left',
     endedAt: serverTimestamp(),
     pointsAwarded: 15, // 10 for parking + 5 for leaving
   });
 
   // Hook into Spot Points economy: Award leaving report points
   await awardLeavingReport(userId, sessionId).catch(console.error);
+
+  // Transition to completed after 5 minutes to remove the opportunity
+  setTimeout(() => {
+    updateDoc(sessionDocRef, { status: 'completed' }).catch(console.error);
+  }, 5 * 60 * 1000);
 }

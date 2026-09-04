@@ -10,7 +10,7 @@ export interface User {
   createdAt: string;
 }
 
-export type ParkingSessionStatus = 'active' | 'completed';
+export type ParkingSessionStatus = 'active' | 'just_left' | 'completed';
 
 export interface ParkingSession {
   id: string;
