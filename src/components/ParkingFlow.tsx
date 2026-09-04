@@ -71,14 +71,25 @@ export default function ParkingFlow() {
     return () => clearInterval(interval);
   }, [activeSession]);
 
-  // When the user taps "I'm Parked": acquire real GPS position
   const handleStartParkingClick = async () => {
     setGpsPosition(null);
     setGpsError(null);
-    setFlowState('acquiring_location');
 
     try {
-      const position = await refreshLocation();
+      let position: GeolocationResult;
+      
+      // Use immediately if already acquired
+      if (currentLocation) {
+        position = {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          accuracy: currentLocation.accuracy || 0,
+        };
+      } else {
+        setFlowState('acquiring_location');
+        position = await refreshLocation();
+      }
+
       setGpsPosition(position);
       setFlowState('selecting_duration');
 

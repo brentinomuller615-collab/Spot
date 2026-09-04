@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as maptilersdk from '@maptiler/sdk';
+import { ParkingSession } from '../lib/types';
 import { useParkingSession } from '../hooks/useParkingSession';
 import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
 import type { MunicipalParkingLocation } from '../lib/municipalParking';
@@ -44,6 +45,10 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const [liveOpportunities, setLiveOpportunities] = useState<HandoffOpportunity[]>([]);
   const liveMarkersRef = useRef<maptilersdk.Marker[]>([]);
   const [selectedOpportunity, setSelectedOpportunity] = useState<HandoffOpportunity | null>(null);
+
+  // Multiplayer active sessions state
+  const [multiplayerSessions, setMultiplayerSessions] = useState<ParkingSession[]>([]);
+  const multiplayerMarkersRef = useRef<maptilersdk.Marker[]>([]);
 
 
 
@@ -96,9 +101,17 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     
     // Subscribe to all active sessions (excluding our own)
     const unsub = subscribeToGlobalActiveSessions(user?.id, async (activeSessions) => {
-      // For each session, fetch the spotter's profile and reputation
+      
+      // 1. Filter out active parking sessions (multiplayer markers)
+      const activeParking = activeSessions.filter(s => s.status === 'active');
+      setMultiplayerSessions(activeParking);
+
+      // 2. Filter out just_left sessions (handoff opportunities)
+      const justLeft = activeSessions.filter(s => s.status === 'just_left');
+
+      // For each just_left session, fetch the spotter's profile and reputation
       const opportunities = await Promise.all(
-        activeSessions.map(async (session) => {
+        justLeft.map(async (session) => {
           try {
             // Fetch the spotter's profile to get privacy mode, alias, etc.
             const spotter = await getUserProfile(session.userId);
@@ -167,6 +180,33 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       liveMarkersRef.current.push(marker);
     });
   }, [map, liveOpportunities]);
+
+  // Render Multiplayer Parking Markers
+  useEffect(() => {
+    if (!map) return;
+    
+    // Clear old
+    multiplayerMarkersRef.current.forEach(m => m.remove());
+    multiplayerMarkersRef.current = [];
+
+    multiplayerSessions.forEach(session => {
+      const el = document.createElement('div');
+      el.className = 'relative flex items-center justify-center cursor-pointer';
+      el.style.zIndex = '2';
+      el.innerHTML = `
+        <div class="bg-emerald-600/80 border-2 border-white/80 rounded-full p-2 shadow-lg flex items-center justify-center text-white">
+          <span class="text-xs">🚗</span>
+        </div>
+      `;
+
+      const marker = new maptilersdk.Marker({ element: el })
+        .setLngLat([session.longitude, session.latitude])
+        .setPopup(new maptilersdk.Popup({ offset: 25 }).setHTML(`<div class="p-1 text-xs font-bold text-slate-800">${session.locationName || 'Parked'}</div>`))
+        .addTo(map);
+      
+      multiplayerMarkersRef.current.push(marker);
+    });
+  }, [map, multiplayerSessions]);
 
   // Update User Current Location Marker
   useEffect(() => {

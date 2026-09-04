@@ -18,7 +18,7 @@ interface ParkingContextType {
   authLoading: boolean;
   activeSession: ParkingSession | null;
   history: ParkingSession[];
-  currentLocation: { latitude: number; longitude: number; name: string } | null;
+  currentLocation: { latitude: number; longitude: number; name: string; accuracy?: number } | null;
   selectedDestination: Destination | null;
   searchDestination: (query: string) => Destination | null;
   selectDestination: (dest: Destination | null) => void;
@@ -41,25 +41,30 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [earnedPointsNotification, setEarnedPointsNotification] = useState<number | null>(null);
   
-  // Real GPS Current Location state (defaults to null initially)
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
     longitude: number;
+    accuracy?: number;
     name: string;
   } | null>(null);
-
-  // Auto-fetching initial location is REMOVED to fix mobile Safari permission prompt blocking.
-  // The location will only be requested via a direct user gesture (e.g. clicking "I'm Parked" or "Recenter").
 
   const refreshLocation = async (): Promise<GeolocationResult> => {
     const pos = await getCurrentPosition();
     setCurrentLocation({
       latitude: pos.latitude,
       longitude: pos.longitude,
+      accuracy: pos.accuracy,
       name: 'Current Location',
     });
     return pos;
   };
+
+  // Attempt to acquire location on load
+  useEffect(() => {
+    refreshLocation().catch(err => {
+      console.warn('Initial location fetch failed or denied:', err);
+    });
+  }, []);
 
   // Subscribe to Auth State changes
   useEffect(() => {
