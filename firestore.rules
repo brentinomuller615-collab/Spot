@@ -41,7 +41,8 @@ service cloud.firestore {
       allow list: if request.auth != null
                   && (
                     resource.data.userId == request.auth.uid ||
-                    resource.data.status in ['active', 'just_left']
+                    resource.data.status == 'active' ||
+                    resource.data.status == 'just_left'
                   );
 
       // Users can start/create a session for themselves with status 'active'
