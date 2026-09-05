@@ -41,6 +41,8 @@ export function subscribeToActiveSession(uid: string, callback: (session: Parkin
 }
 
 export function subscribeToGlobalActiveSessions(currentUid: string | undefined, callback: (sessions: ParkingSession[]) => void) {
+  console.log(`[DIAGNOSTIC] subscribeToGlobalActiveSessions initialized with currentUid:`, currentUid);
+
   // Query all active sessions globally
   const q = query(
     collection(db, 'parkingSessions'),
@@ -48,9 +50,13 @@ export function subscribeToGlobalActiveSessions(currentUid: string | undefined, 
   );
 
   return onSnapshot(q, (querySnapshot) => {
+    console.log(`[DIAGNOSTIC] Firestore onSnapshot triggered. Total docs returned:`, querySnapshot.docs.length);
     const sessions: ParkingSession[] = [];
+    
     querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
+      console.log(`[DIAGNOSTIC] Received doc: ID=${docSnap.id}, userId=${data.userId}, status=${data.status}, lat=${data.latitude}, lng=${data.longitude}`);
+      
       // Filter out the current user's own session on the client side
       // since Firestore doesn't support logical OR/NOT easily in rules/queries here
       if (data.userId !== currentUid) {
@@ -76,9 +82,15 @@ export function subscribeToGlobalActiveSessions(currentUid: string | undefined, 
           pointsAwarded: data.pointsAwarded || 0,
           municipalParkingId: data.municipalParkingId,
         });
+      } else {
+        console.log(`[DIAGNOSTIC] Filtered out session ID=${docSnap.id} because userId (${data.userId}) === currentUid (${currentUid})`);
       }
     });
+    
+    console.log(`[DIAGNOSTIC] Calling MapView callback with ${sessions.length} sessions.`);
     callback(sessions);
+  }, (error) => {
+    console.error('[MULTIPLAYER FIRESTORE ERROR]', error);
   });
 }
 

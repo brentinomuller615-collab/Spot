@@ -189,7 +189,11 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     multiplayerMarkersRef.current.forEach(m => m.remove());
     multiplayerMarkersRef.current = [];
 
+    console.log(`[DIAGNOSTIC] MapView multiplayerSessions.length =`, multiplayerSessions.length);
+
     multiplayerSessions.forEach(session => {
+      console.log(`[DIAGNOSTIC] Preparing MapView marker for remote session ${session.id} at coords:`, [session.longitude, session.latitude]);
+      
       const el = document.createElement('div');
       el.className = 'relative flex items-center justify-center cursor-pointer';
       el.style.zIndex = '2';
@@ -199,6 +203,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         </div>
       `;
 
+      console.log(`[DIAGNOSTIC] Calling new maptilersdk.Marker({ element: el }).setLngLat([${session.longitude}, ${session.latitude}]).addTo(map)`);
       const marker = new maptilersdk.Marker({ element: el })
         .setLngLat([session.longitude, session.latitude])
         .setPopup(new maptilersdk.Popup({ offset: 25 }).setHTML(`<div class="p-1 text-xs font-bold text-slate-800">${session.locationName || 'Parked'}</div>`))
