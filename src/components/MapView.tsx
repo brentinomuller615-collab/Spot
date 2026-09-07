@@ -549,43 +549,56 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       }))
     };
 
-    // If source doesn't exist, create it and the layer
-    if (!map.getSource('likelihood-zones')) {
-      map.addSource('likelihood-zones', {
-        type: 'geojson',
-        data: geojsonData
-      });
+    const updateLayers = () => {
+      if (!map.isStyleLoaded()) return;
 
-      map.addLayer({
-        id: 'likelihood-zones-layer',
-        type: 'circle',
-        source: 'likelihood-zones',
-        paint: {
-          // Radius scales from 25px at zoom 12 to 100px at zoom 18
-          'circle-radius': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            12, 25,
-            15, 60,
-            18, 150
-          ],
-          'circle-color': [
-            'match',
-            ['get', 'classification'],
-            'Better chance', '#10b981', // emerald-500
-            'Mixed', '#f59e0b', // amber-500
-            'Lower chance', '#ef4444', // red-500
-            'transparent' // fallback
-          ],
-          'circle-opacity': 0.35,
-          'circle-blur': 0.5 // Soft edges to look like a zone rather than a hard dot
-        }
-      });
+      // If source doesn't exist, create it and the layer
+      if (!map.getSource('likelihood-zones')) {
+        map.addSource('likelihood-zones', {
+          type: 'geojson',
+          data: geojsonData
+        });
+
+        map.addLayer({
+          id: 'likelihood-zones-layer',
+          type: 'circle',
+          source: 'likelihood-zones',
+          paint: {
+            // Radius scales from 25px at zoom 12 to 100px at zoom 18
+            'circle-radius': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              12, 25,
+              15, 60,
+              18, 150
+            ],
+            'circle-color': [
+              'match',
+              ['get', 'classification'],
+              'Better chance', '#10b981', // emerald-500
+              'Mixed', '#f59e0b', // amber-500
+              'Lower chance', '#ef4444', // red-500
+              'transparent' // fallback
+            ],
+            'circle-opacity': 0.35,
+            'circle-blur': 0.5 // Soft edges to look like a zone rather than a hard dot
+          }
+        });
+      } else {
+        // Just update the data if source already exists
+        const source = map.getSource('likelihood-zones') as maptilersdk.GeoJSONSource;
+        source.setData(geojsonData);
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      updateLayers();
     } else {
-      // Just update the data if source already exists
-      const source = map.getSource('likelihood-zones') as maptilersdk.GeoJSONSource;
-      source.setData(geojsonData);
+      map.once('styledata', updateLayers);
+      return () => {
+        map.off('styledata', updateLayers);
+      };
     }
   }, [map, likelihoodZones]);
 
