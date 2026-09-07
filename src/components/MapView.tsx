@@ -206,10 +206,26 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         </div>
       `;
 
+      const popup = new maptilersdk.Popup({ offset: 25 }).setHTML(`<div class="p-1 text-xs font-bold text-slate-800">Loading address...</div>`);
+      
+      popup.on('open', async () => {
+        try {
+          const res = await fetch(`https://api.maptiler.com/geocoding/${session.longitude},${session.latitude}.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`);
+          const data = await res.json();
+          if (data && data.features && data.features.length > 0) {
+            popup.setHTML(`<div class="p-2 text-sm font-bold text-slate-800 max-w-[200px] leading-tight">${data.features[0].place_name}</div>`);
+          } else {
+            popup.setHTML(`<div class="p-1 text-xs font-bold text-slate-800">Parked</div>`);
+          }
+        } catch (err) {
+          popup.setHTML(`<div class="p-1 text-xs font-bold text-slate-800">Parked</div>`);
+        }
+      });
+
       console.log(`[DIAGNOSTIC] Calling new maptilersdk.Marker({ element: el }).setLngLat([${session.longitude}, ${session.latitude}]).addTo(map)`);
       const marker = new maptilersdk.Marker({ element: el })
         .setLngLat([session.longitude, session.latitude])
-        .setPopup(new maptilersdk.Popup({ offset: 25 }).setHTML(`<div class="p-1 text-xs font-bold text-slate-800">${session.locationName || 'Parked'}</div>`))
+        .setPopup(popup)
         .addTo(map);
       
       multiplayerMarkersRef.current.push(marker);
@@ -584,6 +600,58 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
             'circle-opacity': 0.35,
             'circle-blur': 0.5 // Soft edges to look like a zone rather than a hard dot
           }
+        });
+
+        // Add map click handler for zones
+        map.on('click', 'likelihood-zones-layer', (e) => {
+          if (!e.features || e.features.length === 0) return;
+          const feature = e.features[0];
+          const classification = feature.properties?.classification;
+          if (!classification || classification === 'unknown') return;
+
+          const coordinates = feature.geometry.type === 'Point' 
+            ? feature.geometry.coordinates as [number, number]
+            : [e.lngLat.lng, e.lngLat.lat] as [number, number];
+
+          let title = 'Parking Likelihood';
+          let textColor = '#1e293b';
+          let icon = '⚪';
+
+          if (classification === 'Better chance') {
+            title = 'High Chance';
+            icon = '🟢';
+            textColor = '#047857';
+          } else if (classification === 'Mixed') {
+            title = 'Mixed Chance';
+            icon = '🟠';
+            textColor = '#b45309';
+          } else if (classification === 'Lower chance') {
+            title = 'Lower Chance';
+            icon = '🔴';
+            textColor = '#be123c';
+          }
+
+          const html = `
+            <div style="padding:8px 4px; font-family:system-ui,sans-serif; min-width:160px;">
+              <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+                <span style="font-size:16px;">${icon}</span>
+                <span style="font-weight:800; font-size:14px; color:${textColor}; text-transform:uppercase;">${title}</span>
+              </div>
+              <p style="font-size:12px; color:#64748b; margin:0; line-height:1.4;">Based on live and historical activity in this zone.</p>
+            </div>
+          `;
+
+          new maptilersdk.Popup({ closeButton: true, maxWidth: '240px' })
+            .setLngLat(coordinates)
+            .setHTML(html)
+            .addTo(map);
+        });
+
+        map.on('mouseenter', 'likelihood-zones-layer', () => {
+          map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'likelihood-zones-layer', () => {
+          map.getCanvas().style.cursor = '';
         });
       } else {
         // Just update the data if source already exists
