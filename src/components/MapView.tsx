@@ -9,7 +9,7 @@ import type { MunicipalParkingLocation } from '../lib/municipalParking';
 import { getLiveParkingActivity, LiveParkingActivity } from '../lib/services/liveActivityService';
 import { getHistoricalParkingActivity, HistoricalParkingPattern } from '../lib/services/historicalActivityService';
 import { getParkingLikelihood, ParkingLikelihoodResult } from '../lib/services/parkingLikelihoodService';
-import { calculateDistanceMeters } from '../lib/utils/geo';
+import { calculateDistanceMeters, generateZoneGrid } from '../lib/utils/geo';
 import '@maptiler/sdk/dist/maptiler-sdk.css';
 import DealsButton from './DealsButton';
 import HandoffModal, { HandoffOpportunity } from './HandoffModal';
@@ -50,6 +50,9 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const [multiplayerSessions, setMultiplayerSessions] = useState<ParkingSession[]>([]);
   const multiplayerMarkersRef = useRef<maptilersdk.Marker[]>([]);
 
+  // Geographic Parking Likelihood Zones
+  const [likelihoodZones, setLikelihoodZones] = useState<(ParkingLikelihoodResult & { latitude: number; longitude: number })[]>([]);
+  
 
 
   const apiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
@@ -480,6 +483,111 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       cancelled = true;
     };
   }, [selectedDestination]);
+
+  // Generate geographic zones and fetch likelihoods
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!currentLocation) return;
+
+    const fetchZones = async () => {
+      // Create a small grid around the user: 400m steps up to 600m away (~5-9 points)
+      const grid = generateZoneGrid(currentLocation.latitude, currentLocation.longitude, 600, 400);
+      
+      const results: (ParkingLikelihoodResult & { latitude: number; longitude: number })[] = [];
+
+      for (const point of grid) {
+        if (cancelled) break;
+        
+        try {
+          // Pass a dummy object to satisfy MunicipalParkingLocation signature
+          const dummyLoc = {
+            id: `zone-${point.latitude}-${point.longitude}`,
+            latitude: point.latitude,
+            longitude: point.longitude,
+            categoryLabel: 'Zone',
+          } as any;
+
+          const likelihood = await getParkingLikelihood(dummyLoc, point.latitude, point.longitude);
+          
+          if (!cancelled && likelihood.classification !== 'unknown') {
+            results.push({ ...likelihood, latitude: point.latitude, longitude: point.longitude });
+          }
+        } catch (err) {
+          console.warn('[MapView] Zone likelihood error:', err);
+        }
+      }
+
+      if (!cancelled) {
+        setLikelihoodZones(results);
+      }
+    };
+
+    fetchZones();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentLocation]); // Re-run when the user moves (in production, we'd debounce this)
+
+  // Render geographic likelihood zones on the map
+  useEffect(() => {
+    if (!map) return;
+
+    // Build a GeoJSON FeatureCollection from the valid zones
+    const geojsonData: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: likelihoodZones.map((zone) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [zone.longitude, zone.latitude]
+        },
+        properties: {
+          classification: zone.classification
+        }
+      }))
+    };
+
+    // If source doesn't exist, create it and the layer
+    if (!map.getSource('likelihood-zones')) {
+      map.addSource('likelihood-zones', {
+        type: 'geojson',
+        data: geojsonData
+      });
+
+      map.addLayer({
+        id: 'likelihood-zones-layer',
+        type: 'circle',
+        source: 'likelihood-zones',
+        paint: {
+          // Radius scales from 25px at zoom 12 to 100px at zoom 18
+          'circle-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            12, 25,
+            15, 60,
+            18, 150
+          ],
+          'circle-color': [
+            'match',
+            ['get', 'classification'],
+            'Better chance', '#10b981', // emerald-500
+            'Mixed', '#f59e0b', // amber-500
+            'Lower chance', '#ef4444', // red-500
+            'transparent' // fallback
+          ],
+          'circle-opacity': 0.35,
+          'circle-blur': 0.5 // Soft edges to look like a zone rather than a hard dot
+        }
+      });
+    } else {
+      // Just update the data if source already exists
+      const source = map.getSource('likelihood-zones') as maptilersdk.GeoJSONSource;
+      source.setData(geojsonData);
+    }
+  }, [map, likelihoodZones]);
 
   // Score nearby municipal parking locations
   useEffect(() => {
