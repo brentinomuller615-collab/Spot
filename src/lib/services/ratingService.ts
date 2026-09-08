@@ -10,7 +10,10 @@ export function getPublicSpotterIdentity(
   displayImageUrl: string | null;
 } | null {
   if (!user || user.privacyMode === 'hidden') {
-    return null; // Don't show identity
+    return {
+      displayName: '?',
+      displayImageUrl: null,
+    };
   }
 
   if (user.privacyMode === 'anonymous') {
@@ -21,8 +24,16 @@ export function getPublicSpotterIdentity(
   }
 
   // Public/Alias Mode
+  const username = user.username?.trim();
+  if (!username) {
+    return {
+      displayName: '?',
+      displayImageUrl: null, // Don't show image if username is missing to match '?' privacy fallback
+    };
+  }
+
   return {
-    displayName: user.username ? `@${user.username}` : 'Spotter',
+    displayName: `@${username}`,
     displayImageUrl: user.profileImageUrl || null,
   };
 }
