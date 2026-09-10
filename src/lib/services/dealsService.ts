@@ -50,20 +50,51 @@ const MOCK_DEALS: Deal[] = [
   }
 ];
 
-export async function getActiveDeals(latitude: number, longitude: number): Promise<{deal: Deal, business: Business, distanceMeters: number}[]> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 800));
+import { collection, addDoc, getDocs, getDoc, doc, setDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { db } from '../firebase';
+import { uploadDealImageToCloudinary } from './cloudinaryService';
 
-  const results = [];
+export async function getActiveDeals(latitude: number, longitude: number): Promise<{deal: Deal, business: Business, distanceMeters: number}[]> {
+  const results: {deal: Deal, business: Business, distanceMeters: number}[] = [];
   
+  // 1. Fetch Deals from Firestore
+  try {
+    const dealsCol = collection(db, 'deals');
+    const q = query(dealsCol, where('active', '==', true));
+    const snapshot = await getDocs(q);
+    
+    for (const docSnapshot of snapshot.docs) {
+      const data = docSnapshot.data();
+      const deal: Deal = {
+        id: docSnapshot.id,
+        businessId: data.businessId,
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        active: data.active,
+        createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+      };
+      
+      const business = await getBusinessById(deal.businessId);
+      if (business && business.active) {
+        const distanceMeters = calculateDistanceMeters(latitude, longitude, business.latitude, business.longitude);
+        results.push({ deal, business, distanceMeters });
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch deals from Firestore:', err);
+  }
+
+  // 2. Add Mock Deals (avoid duplicates if we pushed them locally)
   for (const deal of MOCK_DEALS) {
     if (!deal.active) continue;
+    // Skip if we already got this deal from Firestore (mock might have matching ID if we just created it)
+    if (results.some(r => r.deal.id === deal.id)) continue;
     
-    const business = MOCK_BUSINESSES.find(b => b.id === deal.businessId);
+    const business = await getBusinessById(deal.businessId);
     if (!business || !business.active) continue;
     
     const distanceMeters = calculateDistanceMeters(latitude, longitude, business.latitude, business.longitude);
-    
     results.push({ deal, business, distanceMeters });
   }
   
@@ -71,7 +102,151 @@ export async function getActiveDeals(latitude: number, longitude: number): Promi
   return results.sort((a, b) => a.distanceMeters - b.distanceMeters);
 }
 
+export async function getDealsForBusiness(businessId: string): Promise<Deal[]> {
+  const results: Deal[] = [];
+  try {
+    const dealsCol = collection(db, 'deals');
+    const q = query(dealsCol, where('businessId', '==', businessId));
+    const snapshot = await getDocs(q);
+    
+    for (const docSnapshot of snapshot.docs) {
+      const data = docSnapshot.data();
+      results.push({
+        id: docSnapshot.id,
+        businessId: data.businessId,
+        title: data.title,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        active: data.active,
+        createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.error('Failed to fetch deals for business from Firestore:', err);
+    throw err; // Let caller handle it
+  }
+  
+  // No mock logic needed for business dashboard since it relies purely on firestore now
+  return results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
 export async function getBusinessById(businessId: string): Promise<Business | null> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return MOCK_BUSINESSES.find(b => b.id === businessId) || null;
+  // Check mock first
+  const mockBus = MOCK_BUSINESSES.find(b => b.id === businessId);
+  if (mockBus) return mockBus;
+  
+  // Check Firestore
+  try {
+    const docRef = doc(db, 'businesses', businessId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        address: data.address,
+        hours: data.hours,
+        active: data.active,
+        createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+      } as Business;
+    }
+  } catch (err) {
+    console.error('Failed to fetch business by ID:', err);
+  }
+  
+  return null;
+}
+
+export async function createDeal(businessId: string, title: string, description: string): Promise<Deal> {
+  const dealsCol = collection(db, 'deals');
+  const docRef = await addDoc(dealsCol, {
+    businessId,
+    title,
+    description,
+    active: true,
+    createdAt: serverTimestamp(),
+  });
+
+  const newDeal: Deal = {
+    id: docRef.id,
+    businessId,
+    title,
+    description,
+    active: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  // Push to local mock array so it appears immediately in the UI without needing a refresh
+  MOCK_DEALS.unshift(newDeal);
+
+  return newDeal;
+}
+
+export async function createDealWithImage(businessId: string, title: string, description: string, imageFile: File): Promise<Deal> {
+  const dealsCol = collection(db, 'deals');
+  const docRef = doc(dealsCol);
+  const dealId = docRef.id;
+
+  let imageUrl = null;
+
+  try {
+    imageUrl = await uploadDealImageToCloudinary(imageFile);
+  } catch (err: any) {
+    console.error('Failed to upload image:', err);
+    throw new Error(err.message || 'Image upload failed. Please try again.');
+  }
+
+  await setDoc(docRef, {
+    businessId,
+    title,
+    description,
+    imageUrl,
+    active: true,
+    createdAt: serverTimestamp(),
+  });
+
+  const newDeal: Deal = {
+    id: dealId,
+    businessId,
+    title,
+    description,
+    imageUrl,
+    active: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  MOCK_DEALS.unshift(newDeal);
+
+  return newDeal;
+}
+
+export async function createBusinessDoc(businessId: string, name: string, category: string, address: string, latitude: number, longitude: number, hours?: any): Promise<void> {
+  const docRef = doc(db, 'businesses', businessId);
+  await setDoc(docRef, {
+    name,
+    category,
+    address,
+    description: 'A Spot Business Partner', // Default
+    latitude,
+    longitude,
+    hours: hours || null,
+    active: true,
+    createdAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+export async function updateBusinessDoc(businessId: string, data: Partial<Business>): Promise<void> {
+  const docRef = doc(db, 'businesses', businessId);
+  const updateData: any = { ...data };
+  
+  // Clean up undefined values and remove id/createdAt to prevent overwrite
+  delete updateData.id;
+  delete updateData.createdAt;
+  Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+  await setDoc(docRef, updateData, { merge: true });
 }

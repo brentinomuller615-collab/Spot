@@ -88,3 +88,62 @@ export function getCurrentPosition(): Promise<GeolocationResult> {
     );
   });
 }
+
+export function watchCurrentPosition(
+  onSuccess: (position: GeolocationResult) => void,
+  onError: (error: GeolocationError) => void
+): () => void {
+  if (!navigator.geolocation) {
+    onError({
+      type: 'unsupported',
+      message: 'Your browser does not support location services.',
+    });
+    return () => {};
+  }
+
+  const handleSuccess = (position: GeolocationPosition) => {
+    onSuccess({
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracy: position.coords.accuracy,
+    });
+  };
+
+  const handleError = (error: GeolocationPositionError) => {
+    switch (error.code) {
+      case GeolocationPositionError.PERMISSION_DENIED:
+        onError({
+          type: 'permission_denied',
+          message: 'Location permission is required. Please enable location access in your browser settings.',
+        });
+        break;
+      case GeolocationPositionError.TIMEOUT:
+        onError({
+          type: 'timeout',
+          message: "We couldn't get your location in time. Please try again.",
+        });
+        break;
+      case GeolocationPositionError.POSITION_UNAVAILABLE:
+      default:
+        onError({
+          type: 'position_unavailable',
+          message: "Your location couldn't be determined. Please try again.",
+        });
+        break;
+    }
+  };
+
+  const watchId = navigator.geolocation.watchPosition(
+    handleSuccess,
+    handleError,
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 10000, // Accept cached positions up to 10 seconds old
+    }
+  );
+
+  return () => {
+    navigator.geolocation.clearWatch(watchId);
+  };
+}

@@ -77,7 +77,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
       const mapInstance = new maptilersdk.Map({
         container: mapContainerRef.current,
-        style: maptilersdk.MapStyle.STREETS.DARK,
+        style: maptilersdk.MapStyle.TOPO,
         center: initialCenter,
         zoom: 15,
         navigationControl: false, // We will provide our own floating controls/recenter button
@@ -167,7 +167,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
             <span class="text-xs font-bold">${displayInitial}</span>
           </div>
           <div class="absolute -top-6 whitespace-nowrap bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-            ${opp.leavingIn}
+            Leaving
           </div>
         </div>
       `;

@@ -46,6 +46,12 @@ export interface Destination {
   zones: ParkingZone[];
 }
 
+export interface BusinessHours {
+  open: string; // e.g. "08:00"
+  close: string; // e.g. "17:00"
+  closed: boolean;
+}
+
 export interface Business {
   id: string;
   name: string;
@@ -56,6 +62,15 @@ export interface Business {
   latitude: number;
   longitude: number;
   address?: string;
+  hours?: {
+    monday: BusinessHours;
+    tuesday: BusinessHours;
+    wednesday: BusinessHours;
+    thursday: BusinessHours;
+    friday: BusinessHours;
+    saturday: BusinessHours;
+    sunday: BusinessHours;
+  };
   rating?: number;
   ratingCount?: number;
   active: boolean;

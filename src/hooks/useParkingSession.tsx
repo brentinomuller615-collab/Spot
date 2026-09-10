@@ -10,7 +10,7 @@ import {
   startParkingSession, 
   completeParkingSession 
 } from '../lib/services/parkingService';
-import { getCurrentPosition, GeolocationResult } from '../lib/services/geolocationService';
+import { getCurrentPosition, GeolocationResult, watchCurrentPosition } from '../lib/services/geolocationService';
 
 interface ParkingContextType {
   user: User | null;
@@ -59,11 +59,25 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
     return pos;
   };
 
-  // Attempt to acquire location on load
+  // Continuously watch location
   useEffect(() => {
-    refreshLocation().catch(err => {
-      console.warn('Initial location fetch failed or denied:', err);
-    });
+    const unwatch = watchCurrentPosition(
+      (pos) => {
+        setCurrentLocation({
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          accuracy: pos.accuracy,
+          name: 'Current Location',
+        });
+      },
+      (err) => {
+        console.warn('Continuous location fetch failed or denied:', err);
+      }
+    );
+
+    return () => {
+      unwatch();
+    };
   }, []);
 
   // Subscribe to Auth State changes

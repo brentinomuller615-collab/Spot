@@ -99,9 +99,9 @@ export default function DealsFeed({ latitude, longitude, onClose, onNavigate, us
               className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800 overflow-hidden flex flex-col active:scale-[0.98] transition-transform cursor-pointer"
               onClick={() => setSelectedDeal({ deal, business })}
             >
-              {business.imageUrl && (
+              {(deal.imageUrl || business.imageUrl) && (
                 <div className="w-full h-32 bg-slate-200 dark:bg-slate-800 relative">
-                  <img src={business.imageUrl} alt={business.name} className="w-full h-full object-cover" />
+                  <img src={deal.imageUrl || business.imageUrl} alt={deal.title || business.name} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   <div className="absolute bottom-3 left-4 right-4 flex justify-between items-end">
                     <span className="text-white font-bold text-lg drop-shadow-md">{business.name}</span>

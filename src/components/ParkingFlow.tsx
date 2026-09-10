@@ -76,19 +76,8 @@ export default function ParkingFlow() {
     setGpsError(null);
 
     try {
-      let position: GeolocationResult;
-      
-      // Use immediately if already acquired
-      if (currentLocation) {
-        position = {
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-          accuracy: currentLocation.accuracy || 0,
-        };
-      } else {
-        setFlowState('acquiring_location');
-        position = await refreshLocation();
-      }
+      setFlowState('acquiring_location');
+      const position = await refreshLocation();
 
       setGpsPosition(position);
       setFlowState('selecting_duration');

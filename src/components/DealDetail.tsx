@@ -33,10 +33,12 @@ export default function DealDetail({ deal, business, onClose, onNavigate, userId
   return (
     <div className="absolute inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col animate-in slide-in-from-bottom-full duration-300">
       <div className="relative w-full h-64 bg-slate-200 dark:bg-slate-800 shrink-0">
-        {business.imageUrl ? (
+        {deal.imageUrl ? (
+          <img src={deal.imageUrl} alt={deal.title} className="w-full h-full object-cover" />
+        ) : business.imageUrl ? (
           <img src={business.imageUrl} alt={business.name} className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-400">
+          <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-200 dark:bg-slate-800">
             No Image Available
           </div>
         )}

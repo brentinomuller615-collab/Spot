@@ -61,6 +61,18 @@ service cloud.firestore {
       allow write: if false; 
     }
 
+    // Business profiles
+    match /businesses/{businessId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.auth.uid == businessId;
+    }
+
+    // Deals
+    match /deals/{dealId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null && request.resource.data.businessId == request.auth.uid;
+    }
+
     // Spot Points Transactions (Immutable ledger)
     match /spotPointsTransactions/{transactionId} {
       // Users can read their own transactions

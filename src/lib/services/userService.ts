@@ -66,6 +66,12 @@ export async function updateUsername(uid: string, username: string): Promise<boo
   console.log(`[DEBUG] Document path: users/${uid}`);
   
   try {
+    // Ensure document exists
+    const docSnap = await getDoc(userDocRef);
+    if (!docSnap.exists()) {
+      await createUserDoc(uid);
+    }
+
     await updateDoc(userDocRef, {
       username: username.trim(),
       usernameNormalized: username.trim().toLowerCase(),
@@ -80,6 +86,12 @@ export async function updateUsername(uid: string, username: string): Promise<boo
 
 export async function updatePrivacyMode(uid: string, privacyMode: 'public' | 'anonymous' | 'hidden') {
   const userDocRef = doc(db, 'users', uid);
+  // Ensure document exists
+  const docSnap = await getDoc(userDocRef);
+  if (!docSnap.exists()) {
+    await createUserDoc(uid);
+  }
+
   await updateDoc(userDocRef, {
     privacyMode
   });

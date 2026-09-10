@@ -12,6 +12,8 @@ export default function AuthView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isBusinessPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/business');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -158,6 +160,19 @@ export default function AuthView() {
               : "Don't have an account? Sign Up"}
           </button>
         </div>
+
+        {/* Business CTA */}
+        {!isBusinessPage && (
+          <div className="mt-8 pt-6 border-t border-slate-800 text-center animate-in fade-in duration-500">
+            <p className="text-xs text-slate-400 mb-3 font-semibold uppercase tracking-wider">For Businesses</p>
+            <a 
+              href="/business" 
+              className="inline-flex items-center justify-center w-full py-3 text-xs font-bold text-white bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-2xl transition-all shadow-sm"
+            >
+              Join Spot as a Business
+            </a>
+          </div>
+        )}
 
       </div>
     </div>

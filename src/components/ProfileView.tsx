@@ -202,6 +202,21 @@ export default function ProfileView({ onNavigateToMap, onNavigateToPointsHistory
         </div>
       </div>
 
+      {/* Spot for Business CTA */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 p-5 rounded-3xl shadow-sm mb-6 space-y-3">
+        <div className="flex items-center space-x-2 mb-1">
+          <span className="text-blue-600">🏢</span>
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">For Businesses</h3>
+        </div>
+        <p className="text-xs text-slate-500">List your parking deals and manage your business on Spot.</p>
+        <a 
+          href="/business" 
+          className="block w-full py-3 mt-2 text-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold rounded-2xl text-xs transition-colors"
+        >
+          Manage your business on Spot
+        </a>
+      </div>
+
       {/* Sign Out Button */}
       <button
         onClick={() => signOutUser().catch(err => console.error(err))}
