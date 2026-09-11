@@ -34,59 +34,57 @@ export default function ManageDeals({ businessId }: ManageDealsProps) {
   }, [businessId]);
 
   return (
-    <div className="animate-in fade-in duration-300 space-y-6">
+    <div className="animate-in fade-in duration-300 space-y-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className="text-xl font-bold">Manage Deals</h3>
-          <p className="text-slate-500">Create and manage local promotions to attract parkers.</p>
+          <h3 className="text-3xl font-black text-spot-ink tracking-tight mb-2">Manage Deals</h3>
+          <p className="text-spot-muted font-bold">Create and manage local promotions to attract parkers.</p>
         </div>
         <button
           onClick={() => setIsCreateDealOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition-colors shadow-md shadow-blue-500/20"
+          className="bg-spot-orange hover:bg-spot-orange/90 text-white font-black py-3 px-6 rounded-xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all"
         >
           + New Deal
         </button>
       </div>
 
       {loading ? (
-        <div className="p-12 text-center text-slate-500 animate-pulse">Loading deals...</div>
+        <div className="p-16 text-center text-spot-muted font-black uppercase tracking-widest animate-pulse text-sm">Loading deals...</div>
       ) : error ? (
-        <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-xl text-red-600 border border-red-200 dark:border-red-800 text-center">
-          <p className="font-bold mb-2">Error loading deals</p>
-          <p>{error}</p>
-          <button onClick={fetchDeals} className="mt-4 px-4 py-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm font-semibold">Try Again</button>
+        <div className="p-8 bg-spot-red text-white border-2 border-spot-ink shadow-[0_4px_0_0_#171717] rounded-3xl text-center transform rotate-1">
+          <p className="font-black text-xl mb-2">Error loading deals</p>
+          <p className="font-bold text-white/80">{error}</p>
+          <button onClick={fetchDeals} className="mt-6 px-6 py-2 bg-white text-spot-ink border-2 border-spot-ink shadow-[0_2px_0_0_#171717] active:shadow-none active:translate-y-0.5 rounded-xl font-black transition-all">Try Again</button>
         </div>
       ) : deals.length === 0 ? (
-        <div className="p-12 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 text-center">
-          <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">🏷️</span>
-          </div>
-          <h3 className="text-lg font-bold mb-2">No active deals</h3>
-          <p className="text-slate-500 max-w-sm mx-auto mb-6">Create a promotion to encourage parkers to visit your business.</p>
+        <div className="p-16 bg-spot-cream rounded-3xl shadow-[0_4px_0_0_#171717] border-2 border-spot-ink text-center transform -rotate-1">
+          <div className="text-6xl transform hover:scale-110 transition-transform cursor-default mb-6 inline-block">🏷️</div>
+          <h3 className="text-2xl font-black text-spot-ink mb-2">No active deals</h3>
+          <p className="text-spot-muted font-bold max-w-sm mx-auto mb-8">Create a promotion to encourage parkers to visit your business.</p>
           <button
             onClick={() => setIsCreateDealOpen(true)}
-            className="text-blue-600 hover:text-blue-700 font-bold"
+            className="text-spot-orange font-black hover:text-spot-orange/80 transition-colors uppercase tracking-widest text-sm"
           >
             Create your first deal →
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {deals.map(deal => (
-            <div key={deal.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+            <div key={deal.id} className="bg-spot-cream rounded-3xl shadow-[0_4px_0_0_#171717] border-2 border-spot-ink overflow-hidden flex flex-col group hover:-translate-y-1 transition-transform">
               {deal.imageUrl && (
-                <div className="w-full h-32 bg-slate-200 dark:bg-slate-800">
+                <div className="w-full h-40 bg-spot-yellow border-b-2 border-spot-ink">
                   <img src={deal.imageUrl} alt={deal.title} className="w-full h-full object-cover" />
                 </div>
               )}
               <div className="p-6 flex-1">
                 <div className="flex justify-between items-start mb-4">
-                  <h4 className="font-bold text-lg leading-tight">{deal.title}</h4>
-                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold rounded-md">Active</span>
+                  <h4 className="font-black text-xl text-spot-ink leading-tight pr-4">{deal.title}</h4>
+                  <span className="px-3 py-1 bg-spot-green text-spot-ink text-[10px] font-black uppercase tracking-widest rounded-xl border-2 border-spot-ink shadow-[0_2px_0_0_#171717]">Active</span>
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">{deal.description}</p>
+                <p className="text-spot-muted font-bold text-sm leading-relaxed">{deal.description}</p>
               </div>
-              <div className="px-6 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 flex justify-between items-center">
+              <div className="px-6 py-4 bg-white border-t-2 border-spot-ink text-[10px] uppercase tracking-widest font-black text-spot-ink flex justify-between items-center">
                 <span>Created {new Date(deal.createdAt).toLocaleDateString()}</span>
               </div>
             </div>

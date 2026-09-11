@@ -59,40 +59,40 @@ export default function CreateDealModal({ businessId, onClose, onSuccess }: Crea
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-800">
-        <h2 className="text-xl font-bold mb-4">Create a New Deal</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-spot-ink/60 backdrop-blur-sm animate-in fade-in duration-200 p-4">
+      <div className="bg-spot-cream rounded-3xl shadow-[0_8px_0_0_#171717] w-full max-w-md p-8 border-4 border-spot-ink relative overflow-hidden transform rotate-1">
+        <h2 className="text-2xl font-black text-spot-ink uppercase tracking-widest mb-6">Create Deal</h2>
         
         {error && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm">
-            {error}
+          <div className="mb-6 p-4 bg-spot-red text-white font-bold border-2 border-spot-ink shadow-[0_2px_0_0_#171717] rounded-xl text-sm">
+            ⚠️ {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Deal Title</label>
+          <div className="mb-5">
+            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest mb-2">Deal Title</label>
             <input 
               type="text" 
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. 50% off Coffee"
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white"
+              className="w-full bg-white border-2 border-spot-ink/20 focus:border-spot-ink rounded-xl px-4 py-3 outline-none transition-all shadow-[0_2px_0_0_transparent] focus:shadow-[0_4px_0_0_#171717] font-bold text-spot-ink placeholder-spot-muted"
               maxLength={50}
             />
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Deal Image</label>
+          <div className="mb-5">
+            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest mb-2">Deal Image</label>
             {imagePreview ? (
-              <div className="relative w-full h-32 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 mb-2">
+              <div className="relative w-full h-40 rounded-xl overflow-hidden border-2 border-spot-ink shadow-[0_2px_0_0_#171717] mb-2 bg-spot-yellow">
                 <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                 <button 
                   type="button"
                   onClick={() => { setImageFile(null); setImagePreview(null); }}
-                  className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 flex items-center justify-center w-6 h-6"
+                  className="absolute top-3 right-3 bg-spot-red text-white border-2 border-spot-ink shadow-[0_2px_0_0_#171717] rounded-full p-1.5 hover:bg-spot-red/90 flex items-center justify-center w-8 h-8 transition-transform active:translate-y-0.5 active:shadow-none"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             ) : (
@@ -100,36 +100,36 @@ export default function CreateDealModal({ businessId, onClose, onSuccess }: Crea
                 type="file" 
                 accept="image/*"
                 onChange={handleImageChange}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400"
+                className="w-full bg-white border-2 border-spot-ink/20 rounded-xl px-4 py-3 text-sm font-bold text-spot-muted file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-2 file:border-spot-ink file:shadow-[0_2px_0_0_#171717] file:text-xs file:font-black file:bg-spot-yellow file:text-spot-ink hover:file:bg-spot-yellow/80 hover:file:translate-y-0.5 hover:file:shadow-none file:transition-all file:cursor-pointer cursor-pointer focus:border-spot-ink transition-all"
               />
             )}
           </div>
           
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Description</label>
+          <div className="mb-8">
+            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest mb-2">Description</label>
             <textarea 
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Describe your promotion..."
               rows={3}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white resize-none"
+              className="w-full bg-white border-2 border-spot-ink/20 focus:border-spot-ink rounded-xl px-4 py-3 outline-none transition-all shadow-[0_2px_0_0_transparent] focus:shadow-[0_4px_0_0_#171717] font-bold text-spot-ink placeholder-spot-muted resize-none"
               maxLength={150}
             />
           </div>
 
-          <div className="flex space-x-3 justify-end">
+          <div className="flex space-x-3 justify-end pt-4 border-t-2 border-spot-ink/10">
             <button 
               type="button" 
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors disabled:opacity-50"
+              className="text-spot-ink border-2 border-transparent hover:border-spot-ink/10 hover:bg-black/5 rounded-xl font-black px-5 py-3 transition-all disabled:opacity-50"
             >
               Cancel
             </button>
             <button 
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50 flex items-center space-x-2"
+              className="bg-spot-orange hover:bg-spot-orange/90 text-white border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 font-black py-3 px-6 rounded-xl transition-all disabled:opacity-50 disabled:active:translate-y-0 disabled:active:shadow-[0_4px_0_0_#171717] flex items-center space-x-2"
             >
               {loading ? (
                 <>

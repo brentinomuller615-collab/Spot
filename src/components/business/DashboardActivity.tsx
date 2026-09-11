@@ -6,25 +6,22 @@ export default function DashboardActivity() {
   return (
     <div className="animate-in fade-in duration-300 h-full flex flex-col">
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">Parking Activity</h2>
-        <p className="text-slate-500 dark:text-slate-400">
+        <h2 className="text-2xl font-black text-spot-ink tracking-tight mb-2">Parking Activity</h2>
+        <p className="text-spot-muted font-bold">
           Live parking intelligence around your business. Zones indicate the likelihood of finding parking.
         </p>
       </div>
 
-      <div className="flex-1 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-2 relative overflow-hidden min-h-[500px]">
+      <div className="flex-1 bg-spot-cream rounded-3xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] p-2 relative overflow-hidden min-h-[500px]">
         {/* We reuse the consumer MapView component to show live likelihood and multiplayer markers */}
-        <div className="w-full h-full rounded-xl overflow-hidden relative">
+        <div className="w-full h-full rounded-2xl overflow-hidden relative border-2 border-spot-ink shadow-[0_2px_0_0_#171717]">
           <MapView onOpenDeals={() => {}} />
           
-          {/* Overlay gradient to make it feel like a dashboard module rather than the full app */}
-          <div className="absolute top-0 left-0 w-full h-16 bg-gradient-to-b from-black/20 to-transparent pointer-events-none z-10" />
-          
           {/* Status indicator overlay */}
-          <div className="absolute top-4 left-4 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border border-slate-200 dark:border-slate-800 px-4 py-2 rounded-lg shadow-sm">
+          <div className="absolute top-6 left-6 z-20 bg-spot-yellow border-2 border-spot-ink px-4 py-2 rounded-xl shadow-[0_4px_0_0_#171717] transform -rotate-2">
             <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Live Feed Active</span>
+              <div className="w-3 h-3 rounded-full bg-spot-red border-2 border-spot-ink animate-pulse"></div>
+              <span className="text-xs font-black text-spot-ink uppercase tracking-widest">Live Feed Active</span>
             </div>
           </div>
         </div>

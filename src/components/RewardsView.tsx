@@ -26,57 +26,57 @@ export default function RewardsView({ onBack }: RewardsViewProps) {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 p-6 overflow-y-auto pb-28 animate-fadeIn">
+    <div className="flex flex-col h-full bg-spot-cream p-6 overflow-y-auto pb-28 animate-fadeIn">
       {/* Header */}
-      <div className="flex items-center space-x-4 mb-6">
+      <div className="flex items-center space-x-4 mb-8">
         <button 
           onClick={onBack}
-          className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-2xl bg-spot-cream border-2 border-spot-ink shadow-[0_2px_0_0_#171717] hover:bg-black/5 active:shadow-none active:translate-y-0.5 text-spot-ink transition-all"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"></path></svg>
         </button>
-        <h2 className="text-xl font-black tracking-tight text-slate-800 dark:text-slate-100">
+        <h2 className="text-2xl font-black tracking-tight text-spot-ink">
           Rewards
         </h2>
       </div>
 
-      <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-5 rounded-3xl mb-6 flex items-center justify-between">
+      <div className="bg-spot-yellow border-2 border-spot-ink shadow-[0_6px_0_0_#171717] p-6 rounded-3xl mb-8 flex items-center justify-between transform -rotate-1">
         <div>
-          <p className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider">Spot Points</p>
-          <p className="text-3xl font-black text-amber-600 dark:text-amber-500 mt-1">🟡 {balance.toLocaleString()}</p>
+          <p className="text-[10px] font-black text-spot-ink uppercase tracking-widest">Spot Points</p>
+          <p className="text-4xl font-black text-spot-ink mt-1 tracking-tight">🟡 {balance.toLocaleString()}</p>
         </div>
       </div>
 
-      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 p-4 rounded-2xl">
-        <p className="text-sm font-bold text-blue-800 dark:text-blue-300">
-          ℹ️ Use your Spot Points for rewards from local businesses.
+      <div className="mb-6 bg-white border-2 border-spot-ink/10 p-4 rounded-2xl">
+        <p className="text-sm font-bold text-spot-ink">
+          <span className="mr-2">ℹ️</span>
+          Use your Spot Points for rewards from local businesses.
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-0">
         {MOCK_REWARDS.map((reward) => (
-          <div key={reward.id} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 p-5 rounded-3xl shadow-sm relative overflow-hidden group">
-            {/* DEMO Ribbon */}
-            <div className="absolute top-4 right-[-30px] bg-red-500 text-white text-[10px] font-black uppercase px-10 py-1 rotate-45 opacity-80 shadow-md">
+          <div key={reward.id} className="py-6 border-b-2 border-spot-ink/10 relative overflow-hidden group last:border-0 flex flex-col">
+            <div className="absolute top-4 right-0 bg-spot-red text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-l-full shadow-sm">
               DEMO
             </div>
             
             <div className="flex items-start">
-              <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-3xl shrink-0">
+              <div className="w-16 h-16 rounded-2xl bg-white border-2 border-spot-ink shadow-[0_4px_0_0_#171717] flex items-center justify-center text-3xl shrink-0 group-hover:-translate-y-1 transition-transform">
                 {reward.icon}
               </div>
-              <div className="ml-4 flex-1 pt-1">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{reward.business}</p>
-                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 mt-0.5">{reward.title}</h3>
+              <div className="ml-5 flex-1 pt-0.5">
+                <p className="text-[10px] font-black text-spot-orange uppercase tracking-widest mb-1">{reward.business}</p>
+                <h3 className="text-lg font-black text-spot-ink leading-tight pr-12">{reward.title}</h3>
                 
-                <div className="flex items-center justify-between mt-4">
-                  <span className="inline-flex items-center space-x-1 px-3 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 rounded-lg text-xs font-bold">
+                <div className="flex items-center justify-between mt-3">
+                  <span className="inline-flex items-center space-x-1 px-3 py-1.5 bg-white border-2 border-spot-ink/10 text-spot-ink rounded-xl text-xs font-black shadow-sm">
                     <span>🟡 {reward.cost}</span>
                   </span>
                   
                   <button 
                     disabled
-                    className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 font-bold rounded-xl text-xs cursor-not-allowed"
+                    className="px-4 py-2 bg-black/5 border-2 border-spot-ink/10 text-spot-muted font-black rounded-xl text-[10px] uppercase tracking-widest cursor-not-allowed"
                   >
                     Coming Soon
                   </button>

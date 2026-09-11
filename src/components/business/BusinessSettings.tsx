@@ -103,37 +103,37 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
 
   return (
     <div className="animate-in fade-in duration-300 space-y-8 max-w-2xl">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
-        <h3 className="text-xl font-bold mb-6">Business Profile</h3>
+      <div className="bg-spot-cream rounded-3xl shadow-[0_4px_0_0_#171717] border-2 border-spot-ink p-6 md:p-8 overflow-hidden">
+        <h3 className="text-3xl font-black text-spot-ink tracking-tight mb-8">Business Profile</h3>
         
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 text-sm border border-red-200 dark:border-red-800 flex items-start space-x-3">
-            <span className="text-xl">⚠️</span>
-            <p className="mt-0.5">{error}</p>
+          <div className="mb-6 p-4 rounded-xl bg-spot-red text-white font-bold border-2 border-spot-ink shadow-[0_2px_0_0_#171717] flex items-start space-x-3">
+            <span className="text-xl mt-0.5">⚠️</span>
+            <p className="mt-1">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm border border-green-200 dark:border-green-800/50 flex items-start space-x-3">
-            <span className="text-xl">✅</span>
-            <p className="mt-0.5 font-bold">Changes saved successfully!</p>
+          <div className="mb-6 p-4 rounded-xl bg-spot-green text-spot-ink font-black border-2 border-spot-ink shadow-[0_2px_0_0_#171717] flex items-start space-x-3">
+            <span className="text-xl mt-0.5">✅</span>
+            <p className="mt-1">Changes saved successfully!</p>
           </div>
         )}
         
-        <div className="space-y-6">
-          <div className="pb-6 border-b border-slate-200 dark:border-slate-800">
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Profile Picture</label>
+        <div className="space-y-8">
+          <div className="pb-8 border-b-2 border-spot-ink/10">
+            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest mb-4">Profile Picture</label>
             <div className="flex items-center space-x-6">
-              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-center">
+              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-spot-yellow border-2 border-spot-ink shadow-[0_2px_0_0_#171717] shrink-0 flex items-center justify-center transform -rotate-2">
                 {imagePreview ? (
                   <img src={imagePreview} alt="Profile preview" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-4xl">🏪</span>
+                  <span className="text-4xl transform hover:scale-110 transition-transform cursor-default">🏪</span>
                 )}
               </div>
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col space-y-3">
                 <div className="flex space-x-3">
-                  <label className="cursor-pointer px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-semibold rounded-lg transition-colors text-slate-800 dark:text-slate-200 text-center">
+                  <label className="cursor-pointer px-4 py-2 bg-white text-spot-ink border-2 border-spot-ink shadow-[0_2px_0_0_#171717] active:shadow-none active:translate-y-0.5 hover:bg-black/5 font-black rounded-xl transition-all text-sm">
                     {imagePreview ? 'Change Photo' : 'Upload Photo'}
                     <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                   </label>
@@ -141,41 +141,41 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
                     <button 
                       type="button" 
                       onClick={handleRemoveImage}
-                      className="px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      className="px-4 py-2 text-sm font-black text-spot-red hover:bg-spot-red/10 border-2 border-transparent hover:border-spot-red/20 rounded-xl transition-all"
                     >
                       Remove
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-slate-500">JPG, PNG, or WebP. Max 5MB.</p>
+                <p className="text-xs font-bold text-spot-muted">JPG, PNG, or WebP. Max 5MB.</p>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Business Name</label>
+            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest mb-2">Business Name</label>
             <input 
               type="text" 
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 outline-none focus:border-blue-500 transition-all" 
+              className="w-full bg-white border-2 border-spot-ink/20 focus:border-spot-ink rounded-xl px-4 py-3 outline-none transition-all shadow-[0_2px_0_0_transparent] focus:shadow-[0_4px_0_0_#171717] font-bold text-spot-ink" 
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Address / Location</label>
+            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest mb-2">Address / Location</label>
             <input 
               type="text" 
               value={formData.address}
               onChange={(e) => setFormData({...formData, address: e.target.value})}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 outline-none focus:border-blue-500 transition-all" 
+              className="w-full bg-white border-2 border-spot-ink/20 focus:border-spot-ink rounded-xl px-4 py-3 outline-none transition-all shadow-[0_2px_0_0_transparent] focus:shadow-[0_4px_0_0_#171717] font-bold text-spot-ink" 
             />
           </div>
           
-          <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
-            <h4 className="text-lg font-bold mb-4">Business Hours</h4>
+          <div className="pt-8 border-t-2 border-spot-ink/10">
+            <h4 className="text-2xl font-black text-spot-ink tracking-tight mb-6">Business Hours</h4>
             <div className="space-y-3">
               {Object.entries(formData.hours).map(([day, hours]) => (
-                <div key={day} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg">
+                <div key={day} className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${!hours.closed ? 'bg-spot-cream border-spot-ink/10 shadow-sm' : 'bg-black/5 border-transparent opacity-70'}`}>
                   <div className="flex items-center space-x-3 w-1/3">
                     <input 
                       type="checkbox" 
@@ -184,9 +184,9 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
                         const newHours = { ...formData.hours, [day]: { ...hours, closed: !e.target.checked } };
                         setFormData({ ...formData, hours: newHours as any });
                       }}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 bg-white border-slate-300"
+                      className="w-5 h-5 border-2 border-spot-ink/20 checked:bg-spot-orange checked:border-spot-ink accent-spot-orange cursor-pointer"
                     />
-                    <span className="font-semibold capitalize text-sm">{day.substring(0, 3)}</span>
+                    <span className="font-black uppercase tracking-widest text-[10px] text-spot-ink">{day.substring(0, 3)}</span>
                   </div>
                   
                   {!hours.closed ? (
@@ -198,9 +198,9 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
                           const newHours = { ...formData.hours, [day]: { ...hours, open: e.target.value } };
                           setFormData({ ...formData, hours: newHours as any });
                         }}
-                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-3 py-1.5 text-sm outline-none focus:border-blue-500"
+                        className="bg-white border-2 border-spot-ink/20 focus:border-spot-ink font-bold text-spot-ink rounded-lg px-2 py-1 outline-none text-sm transition-colors"
                       />
-                      <span className="text-slate-400">-</span>
+                      <span className="text-spot-muted font-black">-</span>
                       <input 
                         type="time" 
                         value={hours.close}
@@ -208,11 +208,11 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
                           const newHours = { ...formData.hours, [day]: { ...hours, close: e.target.value } };
                           setFormData({ ...formData, hours: newHours as any });
                         }}
-                        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-3 py-1.5 text-sm outline-none focus:border-blue-500"
+                        className="bg-white border-2 border-spot-ink/20 focus:border-spot-ink font-bold text-spot-ink rounded-lg px-2 py-1 outline-none text-sm transition-colors"
                       />
                     </div>
                   ) : (
-                    <div className="w-2/3 text-right text-slate-400 text-sm font-semibold pr-2">
+                    <div className="w-2/3 text-right text-spot-muted text-xs font-black uppercase tracking-widest pr-2">
                       Closed
                     </div>
                   )}
@@ -221,11 +221,11 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
             </div>
           </div>
           
-          <div className="pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+          <div className="pt-8 border-t-2 border-spot-ink/10 flex justify-end">
             <button 
               onClick={handleSave}
               disabled={isSaving}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-xl transition-colors shadow-md shadow-blue-500/20 active:scale-95"
+              className="bg-spot-orange hover:bg-spot-orange/90 text-white border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 font-black py-4 px-8 rounded-xl transition-all disabled:opacity-50 disabled:active:translate-y-0 disabled:active:shadow-[0_4px_0_0_#171717]"
             >
               {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
