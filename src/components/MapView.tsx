@@ -178,12 +178,12 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       }
 
       el.innerHTML = `
-        <div class="relative flex items-center justify-center">
-          <div class="absolute -bottom-1 w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
-          <div class="bg-slate-900 border-2 border-amber-500 rounded-full w-8 h-8 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/20 overflow-hidden">
+        <div class="relative flex items-center justify-center animate-bounce">
+          <div class="absolute -bottom-1 w-3 h-3 bg-amber-500 rounded-full animate-ping opacity-75"></div>
+          <div class="bg-slate-950 border-2 border-amber-500 rounded-full w-10 h-10 flex items-center justify-center text-amber-500 shadow-xl shadow-amber-500/30 overflow-hidden z-10">
             ${avatarHTML}
           </div>
-          <div class="absolute -top-6 whitespace-nowrap bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+          <div class="absolute -top-7 whitespace-nowrap bg-amber-500 text-slate-950 text-[11px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg border border-amber-400 z-20">
             Just left
           </div>
         </div>
@@ -223,14 +223,14 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       
       if (identity?.displayImageUrl) {
         innerHTML = `
-          <div class="bg-emerald-600 border-2 border-white rounded-full p-0.5 shadow-lg flex items-center justify-center w-10 h-10 overflow-hidden">
+          <div class="bg-emerald-500 border-2 border-white rounded-full p-0.5 shadow-xl shadow-emerald-500/20 flex items-center justify-center w-12 h-12 overflow-hidden transform hover:scale-110 transition-transform">
             <img src="${identity.displayImageUrl}" class="w-full h-full rounded-full object-cover" />
           </div>
         `;
       } else {
         innerHTML = `
-          <div class="bg-emerald-600/80 border-2 border-white/80 rounded-full p-2 shadow-lg flex items-center justify-center text-white">
-            <span class="text-xs">🚗</span>
+          <div class="bg-emerald-500 border-2 border-white rounded-full p-2 shadow-xl shadow-emerald-500/20 flex items-center justify-center text-white transform hover:scale-110 transition-transform">
+            <span class="text-lg drop-shadow-md">🚗</span>
           </div>
         `;
       }
@@ -283,8 +283,8 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       el.className = 'relative flex items-center justify-center w-8 h-8';
       el.style.zIndex = '10'; // Keep current location on top
       el.innerHTML = `
-        <span class="absolute w-8 h-8 rounded-full bg-blue-500/20 animate-ping"></span>
-        <span class="relative w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-md"></span>
+        <span class="absolute w-12 h-12 rounded-full bg-blue-500/30 animate-ping"></span>
+        <span class="relative w-5 h-5 rounded-full bg-blue-500 border-[3px] border-white shadow-lg"></span>
       `;
       userMarkerRef.current = new maptilersdk.Marker({ element: el })
         .setLngLat([longitude, latitude])
@@ -359,14 +359,14 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         let innerHTML = '';
         if (identity?.displayImageUrl) {
           innerHTML = `
-            <div class="bg-emerald-600 border-2 border-white rounded-full p-0.5 shadow-lg flex items-center justify-center w-10 h-10 overflow-hidden">
+            <div class="bg-emerald-500 border-2 border-white rounded-full p-0.5 shadow-xl shadow-emerald-500/20 flex items-center justify-center w-12 h-12 overflow-hidden transform hover:scale-110 transition-transform">
               <img src="${identity.displayImageUrl}" class="w-full h-full rounded-full object-cover" />
             </div>
           `;
         } else {
           innerHTML = `
-            <div class="bg-emerald-600 border-2 border-white rounded-full p-2 shadow-lg flex items-center justify-center text-white">
-              <span class="text-sm">🚗</span>
+            <div class="bg-emerald-500 border-2 border-white rounded-full p-2 shadow-xl shadow-emerald-500/20 flex items-center justify-center text-white transform hover:scale-110 transition-transform">
+              <span class="text-lg drop-shadow-md">🚗</span>
             </div>
           `;
         }
@@ -957,27 +957,27 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
   if (initError) {
     return (
-      <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-6 text-center select-none">
-        <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mb-4 text-xl">
-          ⚠️
-        </div>
-        <h3 className="text-sm font-bold text-slate-200">Map Loading Error</h3>
-        <p className="text-xs text-slate-400 mt-1 max-w-[280px] leading-relaxed">{initError}</p>
+    <div className="w-full h-full bg-spot-cream flex flex-col items-center justify-center p-6 text-center select-none">
+      <div className="w-12 h-12 bg-spot-red text-white border-2 border-spot-ink rounded-2xl flex items-center justify-center mb-4 text-xl shadow-[0_4px_0_0_#171717]">
+        ⚠️
       </div>
+      <h3 className="text-sm font-black text-spot-ink">Map Loading Error</h3>
+      <p className="text-xs text-spot-muted mt-1 max-w-[280px] font-bold leading-relaxed">{initError}</p>
+    </div>
     );
   }
 
   return (
-    <div className="relative w-full h-full bg-slate-950 overflow-hidden">
+    <div className="relative w-full h-full bg-spot-cream overflow-hidden">
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Small Destination Label */}
       {selectedDestination && (
         <div className="absolute top-[72px] left-4 right-4 z-10 flex justify-center pointer-events-none">
-          <div className="bg-slate-900/95 backdrop-blur-md shadow-sm rounded-full px-4 py-1.5 border border-slate-800 flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-red-500"></span>
-            <p className="text-[10px] font-bold text-slate-200 truncate max-w-[200px]">
+          <div className="bg-spot-cream shadow-[0_2px_0_0_#171717] rounded-full px-4 py-2 border-2 border-spot-ink flex items-center space-x-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-spot-red"></span>
+            <p className="text-[10px] font-black text-spot-ink truncate max-w-[200px] uppercase tracking-widest">
               {selectedDestination.name}
             </p>
           </div>
@@ -996,10 +996,10 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         {/* Recenter Button */}
         <button
           onClick={handleRecenter}
-          className="p-3 bg-slate-900/95 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white rounded-2xl shadow-lg transition-colors flex items-center justify-center"
+          className="p-3 bg-spot-cream hover:bg-black/5 border-2 border-spot-ink text-spot-ink rounded-2xl shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all flex items-center justify-center"
           title="Recenter on My Location"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 0v4m0-4h4m-4 0H8m12 0a8 8 0 11-16 0 8 8 0 0116 0z" />
           </svg>
         </button>
@@ -1007,9 +1007,9 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
       {/* Municipal data error notice — non-blocking, subtle */}
       {municipalError && (
-        <div className="absolute bottom-24 left-4 right-4 z-10 bg-slate-900/80 backdrop-blur-sm border border-amber-500/30 rounded-xl px-3 py-2 flex items-center space-x-2">
-          <span className="text-amber-400 text-xs">⚠</span>
-          <span className="text-xs text-slate-400">{municipalError}</span>
+        <div className="absolute bottom-24 left-4 right-4 z-10 bg-spot-yellow border-2 border-spot-ink shadow-[0_4px_0_0_#171717] rounded-xl px-4 py-3 flex items-center space-x-3">
+          <span className="text-spot-ink text-sm">⚠</span>
+          <span className="text-xs font-black text-spot-ink">{municipalError}</span>
         </div>
       )}
 

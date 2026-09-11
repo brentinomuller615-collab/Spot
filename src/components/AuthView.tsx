@@ -60,116 +60,117 @@ export default function AuthView() {
   };
 
   return (
-    <div className="flex flex-col h-full justify-center bg-slate-950 px-6 py-12 select-none overflow-y-auto">
-      <div className="w-full max-w-sm mx-auto space-y-8">
+    <div className="flex flex-col h-full justify-center bg-transparent px-6 py-12 select-none overflow-y-auto">
+      <div className="w-full max-w-sm mx-auto">
         
         {/* Spot Logo and Header */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-blue-600/10 border border-blue-500/20 mb-4 animate-pulse">
-            <span className="text-3xl font-black text-blue-500">S</span>
+        <div className="text-center mb-10 mt-6">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-spot-orange shadow-lg mb-6 transform -rotate-6 hover:rotate-0 transition-transform duration-300">
+            <span className="text-5xl font-black text-white">S</span>
           </div>
-          <h2 className="text-3xl font-black tracking-tight text-white">
-            {isSignUp ? 'Create your account' : 'Welcome to Spot'}
+          <h2 className="text-4xl font-black tracking-tight text-spot-ink mb-3">
+            {isSignUp ? 'Join Spot' : 'Get Spot\'d'}
           </h2>
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="text-base text-spot-muted font-bold">
             {isSignUp 
-              ? 'Join Spot and start earning parking points' 
-              : 'Sign in to access your spots and points'}
+              ? 'Claim your parking identity and start earning.' 
+              : 'Sign in. Find a spot. Claim it.'}
           </p>
         </div>
 
-        {/* Error Alert Box */}
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-2xl text-xs font-semibold flex items-center space-x-2 animate-bounce">
-            <span>⚠️</span>
-            <span>{error}</span>
-          </div>
-        )}
+        <div className="bg-spot-cream p-6 rounded-3xl">
+          {/* Error Alert Box */}
+          {error && (
+            <div className="bg-red-500/90 text-white p-3 rounded-2xl text-xs font-bold flex items-center space-x-2 animate-bounce mb-6">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
 
-        {/* Auth Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Email Address
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@domain.com"
-              className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-            />
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-            />
-          </div>
-
-          {isSignUp && (
+          {/* Auth Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Confirm Password
+              <label className="block text-xs font-black uppercase tracking-widest text-spot-ink mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@domain.com"
+                className="w-full bg-white border-2 border-spot-ink/10 rounded-2xl px-5 py-4 text-sm text-spot-ink font-bold placeholder-spot-muted focus:outline-none focus:border-spot-orange transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-widest text-spot-ink mb-2">
+                Password
               </label>
               <input
                 type="password"
                 required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-white border-2 border-spot-ink/10 rounded-2xl px-5 py-4 text-sm text-spot-ink font-bold placeholder-spot-muted focus:outline-none focus:border-spot-orange transition-colors"
               />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-2xl text-sm transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50"
-          >
-            {loading ? (
-              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            ) : (
-              <span>{isSignUp ? 'Sign Up' : 'Sign In'}</span>
+            {isSignUp && (
+              <div>
+                <label className="block text-xs font-black uppercase tracking-widest text-spot-ink mb-2">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-white border-2 border-spot-ink/10 rounded-2xl px-5 py-4 text-sm text-spot-ink font-bold placeholder-spot-muted focus:outline-none focus:border-spot-orange transition-colors"
+                />
+              </div>
             )}
-          </button>
-        </form>
 
-        {/* Toggle between Sign In and Sign Up */}
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError(null);
-            }}
-            className="text-xs text-slate-400 hover:text-white transition-colors font-semibold"
-          >
-            {isSignUp 
-              ? 'Already have an account? Sign In' 
-              : "Don't have an account? Sign Up"}
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-spot-orange hover:bg-spot-orange/90 text-white font-black py-5 px-4 rounded-2xl text-base transition-all duration-300 flex items-center justify-center space-x-2 disabled:opacity-70 mt-4 shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 border-2 border-spot-ink"
+            >
+              {loading ? (
+                <span className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></span>
+              ) : (
+                <span>{isSignUp ? 'Create Account' : 'Let\'s Go'}</span>
+              )}
+            </button>
+          </form>
+
+          {/* Toggle between Sign In and Sign Up */}
+          <div className="text-center mt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError(null);
+              }}
+              className="text-sm text-spot-muted hover:text-spot-ink transition-colors font-bold tracking-wide"
+            >
+              {isSignUp 
+                ? 'Got an account? Sign In' 
+                : "Need an account? Sign Up"}
+            </button>
+          </div>
         </div>
 
         {/* Business CTA */}
         {!isBusinessPage && (
-          <div className="mt-8 pt-6 border-t border-slate-800 text-center animate-in fade-in duration-500">
-            <p className="text-xs text-slate-400 mb-3 font-semibold uppercase tracking-wider">For Businesses</p>
+          <div className="mt-8 text-center animate-in fade-in duration-500">
             <a 
               href="/business" 
-              className="inline-flex items-center justify-center w-full py-3 text-xs font-bold text-white bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-2xl transition-all shadow-sm"
+              className="inline-flex items-center justify-center py-2.5 px-5 text-xs font-black tracking-widest uppercase text-spot-muted hover:text-spot-ink bg-transparent border-2 border-spot-ink/10 hover:border-spot-ink/30 rounded-full transition-all"
             >
-              Join Spot as a Business
+              Spot for Business
             </a>
           </div>
         )}

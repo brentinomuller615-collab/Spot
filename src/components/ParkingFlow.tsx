@@ -191,7 +191,7 @@ export default function ParkingFlow() {
   const formatCoord = (n: number, decimals = 5) => n.toFixed(decimals);
 
   return (
-    <div className="absolute bottom-20 left-4 right-4 z-20 transition-all duration-300">
+    <div className="absolute bottom-28 left-4 right-4 z-20 transition-all duration-300">
 
       {/* POINTS EARNED NOTIFICATION */}
       {earnedPointsNotification !== null && (
@@ -214,15 +214,15 @@ export default function ParkingFlow() {
 
       {/* ACQUIRING LOCATION — loading spinner */}
       {flowState === 'acquiring_location' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-6 border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden">
+        <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center relative overflow-hidden shadow-[0_4px_0_0_#171717]">
           <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
-            <span className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin block"></span>
+            <span className="w-10 h-10 border-4 border-spot-orange/30 border-t-spot-orange rounded-full animate-spin block"></span>
           </div>
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Detecting your location…</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Please allow location access when prompted.</p>
+          <h3 className="text-sm font-black text-spot-ink">Detecting your location…</h3>
+          <p className="text-xs text-spot-muted mt-1 font-bold">Please allow location access when prompted.</p>
           <button
             onClick={handleCancel}
-            className="mt-4 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold transition-colors relative z-10"
+            className="mt-4 text-xs text-spot-muted hover:text-spot-ink font-black transition-colors relative z-10"
           >
             Cancel
           </button>
@@ -348,49 +348,49 @@ export default function ParkingFlow() {
 
       {/* DURATION SELECTOR — shown after successful GPS */}
       {flowState === 'selecting_duration' && gpsPosition && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-5 border border-slate-100 dark:border-slate-800">
+        <div className="bg-white rounded-3xl p-5 border-2 border-spot-ink shadow-[0_4px_0_0_#171717]">
           <div className="flex justify-between items-start mb-3">
             <div className="flex-1 min-w-0 pr-2">
-              <span className="text-xs font-semibold text-blue-500 tracking-wider uppercase">New Parking Session</span>
-              <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mt-0.5 truncate">
+              <span className="text-xs font-black text-spot-orange tracking-widest uppercase">New Parking Session</span>
+              <h3 className="text-base font-black text-spot-ink mt-0.5 truncate">
                 {gpsAddress ? gpsAddress : 'Location confirmed'}
               </h3>
               {/* Display the real GPS coordinates */}
               <div className="flex items-center space-x-1 mt-1">
                 <span className="text-[10px]">📍</span>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                <p className="text-[11px] text-spot-muted font-mono font-bold">
                   {formatCoord(gpsPosition.latitude)}, {formatCoord(gpsPosition.longitude)}
                 </p>
               </div>
               {gpsPosition.accuracy && (
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                <p className="text-[10px] text-spot-muted mt-0.5 font-bold">
                   ±{Math.round(gpsPosition.accuracy)}m accuracy
                 </p>
               )}
             </div>
             <button
               onClick={handleCancel}
-              className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 shrink-0"
+              className="p-1.5 rounded-full bg-spot-cream hover:bg-black/5 text-spot-ink shrink-0 border-2 border-transparent transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-3">
-            Expected duration? <span className="text-slate-400">(Optional)</span>
+          <p className="text-xs font-black text-spot-ink mb-3">
+            Expected duration? <span className="text-spot-muted font-bold">(Optional)</span>
           </p>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-3 gap-2 mb-5">
             {durations.map((dur) => (
               <button
                 key={dur}
                 onClick={() => setSelectedDuration(dur)}
-                className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all duration-200 ${
+                className={`py-2 px-3 text-xs font-black rounded-xl border-2 transition-all duration-200 ${
                   selectedDuration === dur
-                    ? 'border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400'
-                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    ? 'border-spot-ink bg-spot-orange text-white'
+                    : 'border-spot-ink/10 hover:border-spot-ink bg-spot-cream text-spot-ink'
                 }`}
               >
                 {dur}
@@ -400,7 +400,7 @@ export default function ParkingFlow() {
 
           <button
             onClick={handleConfirmStart}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition-all duration-200"
+            className="w-full py-4 bg-spot-orange hover:bg-spot-orange/90 text-white font-black rounded-2xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200"
           >
             Confirm Parking
           </button>
@@ -409,27 +409,26 @@ export default function ParkingFlow() {
 
       {/* CONFIRM LEAVING PANEL */}
       {flowState === 'confirm_leaving' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-5 border border-slate-100 dark:border-slate-800 text-center">
-          <div className="w-12 h-12 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        <div className="bg-white rounded-[2rem] p-6 border-2 border-spot-ink text-center shadow-[0_4px_0_0_#171717]">
+          <div className="w-16 h-16 bg-spot-yellow text-spot-ink border-4 border-spot-ink rounded-full flex items-center justify-center mx-auto mb-4 transform -rotate-6 hover:rotate-0 transition-transform">
+            <svg className="w-8 h-8 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
           </div>
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">Leaving your parking spot?</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">
-            This will complete your active session and reward you with points.
+          <h3 className="text-2xl font-black text-spot-ink tracking-tight mb-2">Leaving this spot?</h3>
+          <p className="text-sm text-spot-muted mb-6 font-bold">
+            We'll let people know and you'll earn +10 Spot Points.
           </p>
           <div className="flex space-x-3">
             <button
               onClick={() => setFlowState('idle')}
-              className="flex-1 py-3 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-bold rounded-2xl transition-colors"
+              className="flex-1 py-4 bg-spot-cream hover:bg-black/5 text-spot-ink font-black border-2 border-spot-ink/10 rounded-2xl transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirmLeaving}
-              className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all duration-200"
+              className="flex-1 py-4 bg-spot-orange text-white font-black rounded-2xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200"
             >
               I'm Leaving
             </button>
@@ -439,40 +438,33 @@ export default function ParkingFlow() {
 
       {/* IDLE: Active session card OR "I'm Parked" button */}
       {flowState === 'idle' && earnedPointsNotification === null && (
-        <>
+        <div className="flex flex-col items-center justify-center w-full">
           {activeSession ? (
-            <div className="bg-slate-900 text-white rounded-3xl shadow-2xl p-5 border border-slate-800">
-              <div className="flex justify-between items-start mb-3">
+            <div className="w-full bg-white text-spot-ink rounded-[2rem] p-6 border-2 border-spot-ink shadow-[0_4px_0_0_#171717]">
+              <div className="flex justify-between items-start mb-2">
                 <div>
-                  <div className="flex items-center space-x-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Active Session</span>
+                  <div className="flex items-center space-x-1.5 mb-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-spot-red animate-pulse"></span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-spot-red">You're Spot'd</span>
                   </div>
-                  <h3 className="text-sm font-extrabold text-white mt-1 truncate max-w-[200px]">You're parked</h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5 flex items-center truncate max-w-[220px]">
-                    <span className="mr-1">📍</span>
-                    {activeSession.locationName}
-                  </p>
-                  {/* Show real stored GPS coordinates */}
-                  <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                    {formatCoord(activeSession.latitude)}, {formatCoord(activeSession.longitude)}
-                  </p>
+                  <h3 className="text-xl font-black mt-1 truncate max-w-[200px] tracking-tight text-spot-ink">{activeSession.locationName}</h3>
                 </div>
-                {activeSession.estimatedDuration && (
-                  <div className="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-300">
-                    Est: {activeSession.estimatedDuration}
-                  </div>
-                )}
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-spot-muted uppercase tracking-widest">Elapsed</p>
+                  <p className="text-3xl font-black text-spot-ink mt-0.5 tracking-tighter font-mono">{elapsedTime}</p>
+                </div>
               </div>
-
-              <div className="flex justify-between items-center mt-4">
-                <div>
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Elapsed Time</p>
-                  <p className="text-2xl font-black text-white mt-0.5 tracking-tight font-mono">{elapsedTime}</p>
+              <div className="flex justify-between items-end mt-5">
+                <div className="flex flex-col space-y-1">
+                  {activeSession.estimatedDuration && (
+                    <div className="inline-flex px-3 py-1.5 rounded-xl bg-spot-cream text-[10px] font-black text-spot-ink w-fit border-2 border-spot-ink/10">
+                      Leaving in {activeSession.estimatedDuration}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={handleImLeavingClick}
-                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-2xl shadow-lg shadow-amber-500/25 transition-all duration-200 text-sm"
+                  className="px-6 py-4 bg-spot-yellow text-spot-ink font-black rounded-2xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200 text-sm uppercase tracking-widest"
                 >
                   I'm Leaving
                 </button>
@@ -481,15 +473,15 @@ export default function ParkingFlow() {
           ) : (
             <button
               onClick={handleStartParkingClick}
-              className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-xl shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-2 text-base"
+              className="py-5 px-10 bg-spot-orange hover:bg-spot-orange/90 text-white font-black rounded-[2rem] border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200 flex items-center justify-center space-x-3 text-xl uppercase tracking-widest"
             >
-              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
               </svg>
               <span>I'm Parked</span>
             </button>
           )}
-        </>
+        </div>
       )}
     </div>
   );
