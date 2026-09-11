@@ -184,7 +184,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
             ${avatarHTML}
           </div>
           <div class="absolute -top-6 whitespace-nowrap bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-            Leaving
+            Just left
           </div>
         </div>
       `;

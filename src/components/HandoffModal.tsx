@@ -60,8 +60,11 @@ export default function HandoffModal({ opportunity, onClose, onClaim }: HandoffM
             )}
             
             <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 py-3 rounded-2xl">
-              <p className="text-amber-800 dark:text-amber-400 font-bold text-lg animate-pulse">
-                Leaving in {opportunity.leavingIn}
+              <p className="text-amber-800 dark:text-amber-400 font-bold text-lg animate-pulse mb-0.5">
+                Just left
+              </p>
+              <p className="text-amber-700/80 dark:text-amber-400/80 text-xs font-semibold">
+                This spot was just vacated
               </p>
             </div>
 
