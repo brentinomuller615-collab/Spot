@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParkingSession } from '../hooks/useParkingSession';
 import { signOutUser } from '../lib/services/authService';
-import { updateUsername, updatePrivacyMode } from '../lib/services/userService';
+import { updateUsername, updatePrivacyMode, updateProfileImage } from '../lib/services/userService';
 import { getSpotPointsBalance } from '../lib/services/pointsService';
 import { PrivacyMode } from '../lib/types';
+import { uploadDealImageToCloudinary } from '../lib/services/cloudinaryService';
 
 interface ProfileViewProps {
   onNavigateToMap: () => void;
@@ -19,6 +20,27 @@ export default function ProfileView({ onNavigateToMap, onNavigateToPointsHistory
   const [aliasInput, setAliasInput] = useState('');
   const [aliasError, setAliasError] = useState('');
   const [isSavingAlias, setIsSavingAlias] = useState(false);
+  
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState('');
+  
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    
+    setIsUploadingImage(true);
+    setImageUploadError('');
+    
+    try {
+      const url = await uploadDealImageToCloudinary(file);
+      await updateProfileImage(user.id, url);
+    } catch (err: any) {
+      console.error("Image upload error:", err);
+      setImageUploadError(err.message || 'Failed to upload image');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
   
   const [spotPointsBalance, setSpotPointsBalance] = useState(0);
 
@@ -53,15 +75,26 @@ export default function ProfileView({ onNavigateToMap, onNavigateToPointsHistory
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 p-6 overflow-y-auto pb-28">
       {/* Profile Header */}
-      <div className="flex items-center space-x-4 mb-6">
-        <div className="w-16 h-16 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl border border-blue-200 dark:border-blue-800 overflow-hidden">
-          {user?.profileImageUrl ? (
-            <img src={user.profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
-          ) : (
-            user?.username ? user.username.substring(0, 2).toUpperCase() : 'SP'
-          )}
+      <div className="flex items-start space-x-4 mb-6">
+        <div className="flex flex-col items-center">
+          <div className="relative w-16 h-16 shrink-0 group">
+            <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xl border border-blue-200 dark:border-blue-800 overflow-hidden">
+              {isUploadingImage ? (
+                <span className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+              ) : user?.profileImageUrl ? (
+                <img src={user.profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                user?.username ? user.username.substring(0, 2).toUpperCase() : 'SP'
+              )}
+            </div>
+            <label className="absolute inset-0 rounded-full bg-black/50 hidden group-hover:flex items-center justify-center cursor-pointer transition-colors">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploadingImage} />
+            </label>
+          </div>
+          {imageUploadError && <p className="text-[10px] text-red-500 font-medium mt-1 w-20 text-center leading-tight">{imageUploadError}</p>}
         </div>
-        <div className="flex-1">
+        <div className="flex-1 mt-1">
           {isEditingAlias ? (
             <div className="flex flex-col space-y-2">
               <input 

@@ -99,6 +99,21 @@ export async function updatePrivacyMode(uid: string, privacyMode: 'public' | 'an
 
 const profileCache = new Map<string, Promise<User | null>>();
 
+export async function updateProfileImage(uid: string, profileImageUrl: string): Promise<void> {
+  const userDocRef = doc(db, 'users', uid);
+  const docSnap = await getDoc(userDocRef);
+  if (!docSnap.exists()) {
+    await createUserDoc(uid);
+  }
+
+  await updateDoc(userDocRef, {
+    profileImageUrl
+  });
+  
+  // Invalidate cache so map markers refetch the updated image
+  profileCache.delete(uid);
+}
+
 export function getUserProfile(uid: string): Promise<User | null> {
   if (profileCache.has(uid)) {
     return profileCache.get(uid)!;
