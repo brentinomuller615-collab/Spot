@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { updateBusinessDoc } from '../../lib/services/dealsService';
+import { uploadDealImageToCloudinary } from '../../lib/services/cloudinaryService';
 import { Business, BusinessHours } from '../../lib/types';
 
 interface BusinessSettingsProps {
@@ -24,9 +25,38 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
     hours: businessProfile.hours || DEFAULT_HOURS,
   });
   
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(businessProfile.imageUrl || null);
+  const [imageRemoved, setImageRemoved] = useState(false);
+
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file (JPG, PNG, WebP).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be less than 5MB.');
+      return;
+    }
+
+    setError(null);
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setImageRemoved(false);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageRemoved(true);
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -34,17 +64,31 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
     setSuccess(false);
     
     try {
-      await updateBusinessDoc(businessProfile.id, {
+      let newImageUrl = businessProfile.imageUrl || null;
+      if (imageFile) {
+        newImageUrl = await uploadDealImageToCloudinary(imageFile);
+      } else if (imageRemoved) {
+        newImageUrl = null;
+      }
+
+      const updatePayload: any = {
         name: formData.name,
         address: formData.address,
         hours: formData.hours,
-      });
+      };
+      
+      if (imageFile || imageRemoved) {
+        updatePayload.imageUrl = newImageUrl;
+      }
+
+      await updateBusinessDoc(businessProfile.id, updatePayload);
       
       onUpdate({
         ...businessProfile,
         name: formData.name,
         address: formData.address,
         hours: formData.hours,
+        imageUrl: newImageUrl || undefined,
       });
       
       setSuccess(true);
@@ -77,6 +121,37 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
         )}
         
         <div className="space-y-6">
+          <div className="pb-6 border-b border-slate-200 dark:border-slate-800">
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Profile Picture</label>
+            <div className="flex items-center space-x-6">
+              <div className="relative w-24 h-24 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-center">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Profile preview" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-4xl">🏪</span>
+                )}
+              </div>
+              <div className="flex flex-col space-y-2">
+                <div className="flex space-x-3">
+                  <label className="cursor-pointer px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-sm font-semibold rounded-lg transition-colors text-slate-800 dark:text-slate-200 text-center">
+                    {imagePreview ? 'Change Photo' : 'Upload Photo'}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                  </label>
+                  {imagePreview && (
+                    <button 
+                      type="button" 
+                      onClick={handleRemoveImage}
+                      className="px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">JPG, PNG, or WebP. Max 5MB.</p>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Business Name</label>
             <input 

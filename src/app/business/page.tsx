@@ -157,9 +157,13 @@ export default function BusinessPage() {
             {activeTab === 'settings' && 'Business Settings'}
           </h2>
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
-              TB
-            </div>
+            {businessProfile?.imageUrl ? (
+              <img src={businessProfile.imageUrl} alt={businessProfile?.name || 'Business'} className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-sm">
+                {businessProfile?.name ? businessProfile.name.substring(0, 2).toUpperCase() : 'TB'}
+              </div>
+            )}
           </div>
         </header>
 

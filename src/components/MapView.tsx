@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as maptilersdk from '@maptiler/sdk';
-import { ParkingSession } from '../lib/types';
+import { ParkingSession, User } from '../lib/types';
 import { useParkingSession } from '../hooks/useParkingSession';
 import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
 import type { MunicipalParkingLocation } from '../lib/municipalParking';
@@ -47,7 +47,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const [selectedOpportunity, setSelectedOpportunity] = useState<HandoffOpportunity | null>(null);
 
   // Multiplayer active sessions state
-  const [multiplayerSessions, setMultiplayerSessions] = useState<ParkingSession[]>([]);
+  const [multiplayerSessions, setMultiplayerSessions] = useState<{session: ParkingSession, spotter: User | null}[]>([]);
   const multiplayerMarkersRef = useRef<maptilersdk.Marker[]>([]);
 
   // Geographic Parking Likelihood Zones
@@ -107,7 +107,19 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       
       // 1. Filter out active parking sessions (multiplayer markers)
       const activeParking = activeSessions.filter(s => s.status === 'active');
-      setMultiplayerSessions(activeParking);
+      
+      const activeWithProfiles = await Promise.all(
+        activeParking.map(async (session) => {
+          try {
+            const spotter = await getUserProfile(session.userId);
+            return { session, spotter };
+          } catch (err) {
+            console.error('Failed to resolve spotter profile for active session:', err);
+            return { session, spotter: null };
+          }
+        })
+      );
+      setMultiplayerSessions(activeWithProfiles);
 
       // 2. Filter out just_left sessions (handoff opportunities)
       const justLeft = activeSessions.filter(s => s.status === 'just_left');
@@ -154,17 +166,22 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       el.className = 'cursor-pointer transform hover:scale-110 transition-transform';
       el.style.zIndex = '4';
       
-      const identity = getPublicSpotterIdentity(
-        opp.spotter
-      );
-      const isHidden = !identity;
-      const displayInitial = isHidden ? '?' : (identity.displayName.charAt(0).toUpperCase() || 'S');
+      const identity = opp.spotter ? getPublicSpotterIdentity(opp.spotter) : null;
+      const isHidden = !identity || identity.displayName === '?';
+      const displayInitial = isHidden ? '?' : (identity.displayName.replace('@', '').charAt(0).toUpperCase() || 'S');
+
+      let avatarHTML = '';
+      if (identity?.displayImageUrl) {
+        avatarHTML = `<img src="${identity.displayImageUrl}" class="w-full h-full rounded-full object-cover" />`;
+      } else {
+        avatarHTML = `<span class="text-xs font-bold">${displayInitial}</span>`;
+      }
 
       el.innerHTML = `
         <div class="relative flex items-center justify-center">
           <div class="absolute -bottom-1 w-2 h-2 bg-amber-500 rounded-full animate-ping"></div>
-          <div class="bg-slate-900 border-2 border-amber-500 rounded-full w-8 h-8 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/20">
-            <span class="text-xs font-bold">${displayInitial}</span>
+          <div class="bg-slate-900 border-2 border-amber-500 rounded-full w-8 h-8 flex items-center justify-center text-amber-500 shadow-lg shadow-amber-500/20 overflow-hidden">
+            ${avatarHTML}
           </div>
           <div class="absolute -top-6 whitespace-nowrap bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
             Leaving
@@ -194,17 +211,31 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
     console.log(`[DIAGNOSTIC] MapView multiplayerSessions.length =`, multiplayerSessions.length);
 
-    multiplayerSessions.forEach(session => {
+    multiplayerSessions.forEach(({session, spotter}) => {
       console.log(`[DIAGNOSTIC] Preparing MapView marker for remote session ${session.id} at coords:`, [session.longitude, session.latitude]);
       
       const el = document.createElement('div');
       el.className = 'relative flex items-center justify-center cursor-pointer';
       el.style.zIndex = '2';
-      el.innerHTML = `
-        <div class="bg-emerald-600/80 border-2 border-white/80 rounded-full p-2 shadow-lg flex items-center justify-center text-white">
-          <span class="text-xs">🚗</span>
-        </div>
-      `;
+      
+      const identity = spotter ? getPublicSpotterIdentity(spotter) : null;
+      let innerHTML = '';
+      
+      if (identity?.displayImageUrl) {
+        innerHTML = `
+          <div class="bg-emerald-600 border-2 border-white rounded-full p-0.5 shadow-lg flex items-center justify-center w-10 h-10 overflow-hidden">
+            <img src="${identity.displayImageUrl}" class="w-full h-full rounded-full object-cover" />
+          </div>
+        `;
+      } else {
+        innerHTML = `
+          <div class="bg-emerald-600/80 border-2 border-white/80 rounded-full p-2 shadow-lg flex items-center justify-center text-white">
+            <span class="text-xs">🚗</span>
+          </div>
+        `;
+      }
+      
+      el.innerHTML = innerHTML;
 
       const popup = new maptilersdk.Popup({ offset: 25 }).setHTML(`<div class="p-1 text-xs font-bold text-slate-800">Loading address...</div>`);
       
@@ -324,11 +355,23 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         const el = document.createElement('div');
         el.className = 'relative flex items-center justify-center cursor-pointer';
         el.style.zIndex = '2';
-        el.innerHTML = `
-          <div class="bg-emerald-600 border-2 border-white rounded-full p-2 shadow-lg flex items-center justify-center text-white">
-            <span class="text-sm">🚗</span>
-          </div>
-        `;
+        const identity = user ? getPublicSpotterIdentity(user) : null;
+        let innerHTML = '';
+        if (identity?.displayImageUrl) {
+          innerHTML = `
+            <div class="bg-emerald-600 border-2 border-white rounded-full p-0.5 shadow-lg flex items-center justify-center w-10 h-10 overflow-hidden">
+              <img src="${identity.displayImageUrl}" class="w-full h-full rounded-full object-cover" />
+            </div>
+          `;
+        } else {
+          innerHTML = `
+            <div class="bg-emerald-600 border-2 border-white rounded-full p-2 shadow-lg flex items-center justify-center text-white">
+              <span class="text-sm">🚗</span>
+            </div>
+          `;
+        }
+        
+        el.innerHTML = innerHTML;
         
         activeSessionMarkerRef.current = new maptilersdk.Marker({ element: el })
           .setLngLat([longitude, latitude])

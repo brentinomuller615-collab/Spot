@@ -24,7 +24,7 @@ export async function getSpotPointsTransactions(userId: string): Promise<SpotPoi
 
   // Sort descending by date in memory to avoid needing composite indexes right away for V1
   transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  
+
   return transactions;
 }
 

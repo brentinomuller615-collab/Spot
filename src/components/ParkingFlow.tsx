@@ -77,6 +77,7 @@ export default function ParkingFlow() {
 
     try {
       setFlowState('acquiring_location');
+      
       const position = await refreshLocation();
 
       setGpsPosition(position);
@@ -213,15 +214,15 @@ export default function ParkingFlow() {
 
       {/* ACQUIRING LOCATION — loading spinner */}
       {flowState === 'acquiring_location' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-6 border border-slate-100 dark:border-slate-800 text-center">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-6 border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden">
           <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
-            <span className="w-10 h-10 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin block"></span>
+            <span className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin block"></span>
           </div>
           <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Detecting your location…</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Please allow location access when prompted.</p>
           <button
             onClick={handleCancel}
-            className="mt-4 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold transition-colors"
+            className="mt-4 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold transition-colors relative z-10"
           >
             Cancel
           </button>

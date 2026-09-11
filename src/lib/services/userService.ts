@@ -97,20 +97,37 @@ export async function updatePrivacyMode(uid: string, privacyMode: 'public' | 'an
   });
 }
 
-export async function getUserProfile(uid: string): Promise<User | null> {
-  const userDocRef = doc(db, 'users', uid);
-  const docSnap = await getDoc(userDocRef);
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      points: data.points || 0,
-      username: data.username,
-      usernameNormalized: data.usernameNormalized,
-      profileImageUrl: data.profileImageUrl,
-      privacyMode: data.privacyMode || 'public',
-      createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-    };
+const profileCache = new Map<string, Promise<User | null>>();
+
+export function getUserProfile(uid: string): Promise<User | null> {
+  if (profileCache.has(uid)) {
+    return profileCache.get(uid)!;
   }
-  return null;
+
+  const fetchProfile = async () => {
+    try {
+      const userDocRef = doc(db, 'users', uid);
+      const docSnap = await getDoc(userDocRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          points: data.points || 0,
+          username: data.username,
+          usernameNormalized: data.usernameNormalized,
+          profileImageUrl: data.profileImageUrl,
+          privacyMode: data.privacyMode || 'public',
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        } as User;
+      }
+      return null;
+    } catch (error) {
+      profileCache.delete(uid); // Invalidate on error so it can be retried
+      throw error;
+    }
+  };
+
+  const promise = fetchProfile();
+  profileCache.set(uid, promise);
+  return promise;
 }
