@@ -28,6 +28,8 @@ interface ParkingContextType {
   dismissPointNotification: () => void;
   earnedPointsNotification: number | null;
   refreshLocation: () => Promise<GeolocationResult>;
+  mapInstance: any | null;
+  setMapInstance: (map: any | null) => void;
 }
 
 const ParkingContext = createContext<ParkingContextType | undefined>(undefined);
@@ -40,6 +42,7 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
   const [history, setHistory] = useState<ParkingSession[]>([]);
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
   const [earnedPointsNotification, setEarnedPointsNotification] = useState<number | null>(null);
+  const [mapInstance, setMapInstance] = useState<any | null>(null);
   
   const [currentLocation, setCurrentLocation] = useState<{
     latitude: number;
@@ -209,6 +212,8 @@ export function ParkingProvider({ children }: { children: React.ReactNode }) {
         dismissPointNotification,
         earnedPointsNotification,
         refreshLocation,
+        mapInstance,
+        setMapInstance,
       }}
     >
       {children}

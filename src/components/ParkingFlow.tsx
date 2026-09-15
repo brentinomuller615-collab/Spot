@@ -33,6 +33,7 @@ export default function ParkingFlow() {
     dismissPointNotification,
     refreshLocation,
     user,
+    mapInstance,
   } = useParkingSession();
 
   const [flowState, setFlowState] = useState<FlowState>('idle');
@@ -190,6 +191,12 @@ export default function ParkingFlow() {
       setFlowState('acquiring_report_location');
       const position = await refreshLocation();
       setGpsPosition(position);
+      
+      // Center the map for manual placement
+      if (mapInstance) {
+        mapInstance.flyTo({ center: [position.longitude, position.latitude], zoom: 18, essential: true });
+      }
+
       setFlowState('confirming_report');
     } catch (err) {
       setGpsError(err as GeolocationError);
@@ -198,12 +205,14 @@ export default function ParkingFlow() {
   };
 
   const handleConfirmReport = async () => {
-    if (!gpsPosition || !user) return;
+    if (!gpsPosition || !user || !mapInstance) return;
     
     setFlowState('creating_report');
     
     try {
-      await reportParkingLocation(user.id, gpsPosition.latitude, gpsPosition.longitude, gpsPosition.accuracy);
+      const center = mapInstance.getCenter();
+      
+      await reportParkingLocation(user.id, center.lat, center.lng, gpsPosition.accuracy);
       setTimeout(() => setFlowState('idle'), 800);
     } catch (err) {
       console.error('Failed to report parking:', err);
@@ -223,7 +232,15 @@ export default function ParkingFlow() {
   const formatCoord = (n: number, decimals = 5) => n.toFixed(decimals);
 
   return (
-    <div className="absolute bottom-28 left-4 right-4 z-20 transition-all duration-300">
+    <>
+      {/* FIXED CENTER MARKER FOR MANUAL PLACEMENT */}
+      {flowState === 'confirming_report' && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none drop-shadow-xl animate-bounce">
+          <span className="text-4xl filter drop-shadow-md">📍</span>
+        </div>
+      )}
+
+      <div className="absolute bottom-28 left-4 right-4 z-20 transition-all duration-300">
 
       {/* POINTS EARNED NOTIFICATION */}
       {earnedPointsNotification !== null && (
@@ -260,7 +277,7 @@ export default function ParkingFlow() {
       {flowState === 'confirming_report' && (
         <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center shadow-[0_4px_0_0_#171717]">
           <h3 className="text-xl font-black text-spot-ink mb-2">Parking here?</h3>
-          <p className="text-sm text-spot-muted mb-6 font-bold">Spot will add this location to the map.</p>
+          <p className="text-sm text-spot-muted mb-6 font-bold">Move the map to place the parking location.</p>
           <div className="flex space-x-3">
             <button
               onClick={handleCancel}
@@ -581,5 +598,6 @@ export default function ParkingFlow() {
         </div>
       )}
     </div>
+    </>
   );
 }

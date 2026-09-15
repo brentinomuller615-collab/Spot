@@ -23,7 +23,7 @@ interface MapViewProps {
 }
 
 export default function MapView({ onOpenDeals }: MapViewProps) {
-  const { user, currentLocation, selectedDestination, activeSession, refreshLocation } = useParkingSession();
+  const { user, currentLocation, selectedDestination, activeSession, refreshLocation, setMapInstance } = useParkingSession();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const [map, setMap] = useState<maptilersdk.Map | null>(null);
@@ -90,11 +90,13 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
       mapRef.current = mapInstance;
       setMap(mapInstance);
+      setMapInstance(mapInstance);
 
       return () => {
         mapInstance.remove();
         mapRef.current = null;
         setMap(null);
+        setMapInstance(null);
       };
     } catch (err: any) {
       console.error('MapTiler initialization error:', err);
