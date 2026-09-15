@@ -26,6 +26,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const [map, setMap] = useState<maptilersdk.Map | null>(null);
+  const [mapStyle, setMapStyle] = useState<any>(maptilersdk.MapStyle.TOPO);
   const userMarkerRef = useRef<maptilersdk.Marker | null>(null);
   const destMarkerRef = useRef<maptilersdk.Marker | null>(null);
   const activeSessionMarkerRef = useRef<maptilersdk.Marker | null>(null);
@@ -77,7 +78,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
       const mapInstance = new maptilersdk.Map({
         container: mapContainerRef.current,
-        style: maptilersdk.MapStyle.SATELLITE,
+        style: mapStyle,
         center: initialCenter,
         zoom: 15,
         navigationControl: false, // We will provide our own floating controls/recenter button
@@ -97,6 +98,12 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       setInitError('Failed to initialize the interactive map.');
     }
   }, [apiKey]);
+
+  // Update map style when toggled
+  useEffect(() => {
+    if (!map) return;
+    map.setStyle(mapStyle);
+  }, [map, mapStyle]);
 
   // Subscribe to real active parking sessions globally for handoffs
   useEffect(() => {
@@ -988,7 +995,23 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
 
       {/* Floating Controls */}
-      <div className="absolute top-32 right-4 z-10 flex flex-col space-y-4">
+      <div className="absolute top-32 right-4 z-10 flex flex-col space-y-4 items-end">
+        {/* Map Style Toggle */}
+        <div className="flex bg-spot-cream border-2 border-spot-ink rounded-2xl shadow-[0_4px_0_0_#171717] p-1 gap-1">
+          <button
+            onClick={() => setMapStyle(maptilersdk.MapStyle.TOPO)}
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${mapStyle === maptilersdk.MapStyle.TOPO ? 'bg-spot-ink text-white' : 'text-spot-ink hover:bg-black/5'}`}
+          >
+            Map
+          </button>
+          <button
+            onClick={() => setMapStyle(maptilersdk.MapStyle.SATELLITE)}
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${mapStyle === maptilersdk.MapStyle.SATELLITE ? 'bg-spot-ink text-white' : 'text-spot-ink hover:bg-black/5'}`}
+          >
+            Sat
+          </button>
+        </div>
+
         {onOpenDeals && (
           <DealsButton onClick={onOpenDeals} />
         )}
