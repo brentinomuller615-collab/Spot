@@ -41,15 +41,19 @@ export async function reportParkingLocation(uid: string, latitude: number, longi
   }
 
   // 2. Create new report
-  const newReport = {
+  const newReport: any = {
     latitude,
     longitude,
-    accuracy: accuracy || null,
     createdBy: uid,
     createdAt: serverTimestamp(),
     source: 'user_report',
     status: 'active'
   };
+  
+  if (typeof accuracy === 'number') {
+    newReport.accuracy = accuracy;
+  }
+  
   const docRef = await addDoc(colRef, newReport);
 
   return {

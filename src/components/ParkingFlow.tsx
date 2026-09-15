@@ -204,6 +204,8 @@ export default function ParkingFlow() {
     }
   };
 
+  const [reportErrorMsg, setReportErrorMsg] = useState<string>('');
+
   const handleConfirmReport = async () => {
     if (!gpsPosition || !user || !mapInstance) return;
     
@@ -212,10 +214,20 @@ export default function ParkingFlow() {
     try {
       const center = mapInstance.getCenter();
       
-      await reportParkingLocation(user.id, center.lat, center.lng, gpsPosition.accuracy);
+      const lat = Number(center.lat);
+      const lng = Number(center.lng);
+
+      if (!isFinite(lat) || !isFinite(lng)) {
+        setReportErrorMsg('Please select a valid location on the map.');
+        setFlowState('report_error');
+        return;
+      }
+
+      await reportParkingLocation(user.id, lat, lng, gpsPosition.accuracy);
       setTimeout(() => setFlowState('idle'), 800);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to report parking:', err);
+      setReportErrorMsg(err?.message || String(err));
       setFlowState('report_error');
     }
   };
