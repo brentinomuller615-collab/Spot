@@ -16,6 +16,7 @@ import HandoffModal, { HandoffOpportunity } from './HandoffModal';
 import { getPublicSpotterIdentity } from '../lib/services/ratingService';
 import { getUserProfile } from '../lib/services/userService';
 import { subscribeToGlobalActiveSessions } from '../lib/services/parkingService';
+import { subscribeToCrowdsourcedParking, CrowdsourcedParking } from '../lib/services/parkingReportService';
 
 interface MapViewProps {
   onOpenDeals?: () => void;
@@ -54,7 +55,9 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   // Geographic Parking Likelihood Zones
   const [likelihoodZones, setLikelihoodZones] = useState<(ParkingLikelihoodResult & { latitude: number; longitude: number })[]>([]);
   
-
+  // Permanent Walker Parking Locations
+  const [permanentParking, setPermanentParking] = useState<CrowdsourcedParking[]>([]);
+  const permanentParkingMarkersRef = useRef<maptilersdk.Marker[]>([]);
 
   const apiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
@@ -104,6 +107,40 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     if (!map) return;
     map.setStyle(mapStyle);
   }, [map, mapStyle]);
+
+  // Subscribe to permanent crowdsourced parking locations
+  useEffect(() => {
+    if (!map) return;
+    const unsub = subscribeToCrowdsourcedParking((locations) => {
+      setPermanentParking(locations);
+    });
+    return () => unsub();
+  }, [map]);
+
+  // Render permanent parking markers
+  useEffect(() => {
+    if (!map) return;
+
+    permanentParkingMarkersRef.current.forEach(m => m.remove());
+    permanentParkingMarkersRef.current = [];
+
+    permanentParking.forEach((loc) => {
+      const el = document.createElement('div');
+      el.className = 'w-4 h-4 bg-emerald-500 rounded-sm border border-white shadow-md cursor-pointer transform hover:scale-110 transition-transform';
+      el.style.zIndex = '3'; // Below handoffs, above likelihood zones
+
+      const popup = new maptilersdk.Popup({ offset: 10 }).setHTML(
+        `<div class="p-1 text-xs font-bold text-slate-800">Permanent Parking Area</div>`
+      );
+
+      const marker = new maptilersdk.Marker({ element: el })
+        .setLngLat([loc.longitude, loc.latitude])
+        .setPopup(popup)
+        .addTo(map);
+
+      permanentParkingMarkersRef.current.push(marker);
+    });
+  }, [map, permanentParking]);
 
   // Subscribe to real active parking sessions globally for handoffs
   useEffect(() => {

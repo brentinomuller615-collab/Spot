@@ -5,6 +5,7 @@ import { useParkingSession } from '../hooks/useParkingSession';
 import { GeolocationResult, GeolocationError } from '../lib/services/geolocationService';
 import { calculateDistanceMeters } from '../lib/utils/geo';
 import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
+import { reportParkingLocation } from '../lib/services/parkingReportService';
 
 // Flow states:
 // 'idle'               - default: show "I'm Parked" button (or active session card)
@@ -16,7 +17,8 @@ import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
 // 'completing_session' - Firestore update in flight
 // 'complete_error'     - Firestore update failed; user can retry
 // 'confirm_leaving'    - confirmation panel before ending session
-type FlowState = 'idle' | 'acquiring_location' | 'location_error' | 'selecting_duration' | 'creating_session' | 'create_error' | 'completing_session' | 'complete_error' | 'confirm_leaving';
+type FlowState = 'idle' | 'acquiring_location' | 'location_error' | 'selecting_duration' | 'creating_session' | 'create_error' | 'completing_session' | 'complete_error' | 'confirm_leaving'
+  | 'acquiring_report_location' | 'confirming_report' | 'creating_report' | 'report_error';
 
 const durations = ['15 min', '30 min', '1 hour', '2 hours', '3+ hours', 'Skip'];
 
@@ -30,6 +32,7 @@ export default function ParkingFlow() {
     earnedPointsNotification,
     dismissPointNotification,
     refreshLocation,
+    user,
   } = useParkingSession();
 
   const [flowState, setFlowState] = useState<FlowState>('idle');
@@ -179,6 +182,35 @@ export default function ParkingFlow() {
     }
   };
 
+  const handleReportParkingClick = async () => {
+    setGpsPosition(null);
+    setGpsError(null);
+
+    try {
+      setFlowState('acquiring_report_location');
+      const position = await refreshLocation();
+      setGpsPosition(position);
+      setFlowState('confirming_report');
+    } catch (err) {
+      setGpsError(err as GeolocationError);
+      setFlowState('location_error');
+    }
+  };
+
+  const handleConfirmReport = async () => {
+    if (!gpsPosition || !user) return;
+    
+    setFlowState('creating_report');
+    
+    try {
+      await reportParkingLocation(user.id, gpsPosition.latitude, gpsPosition.longitude, gpsPosition.accuracy);
+      setTimeout(() => setFlowState('idle'), 800);
+    } catch (err) {
+      console.error('Failed to report parking:', err);
+      setFlowState('report_error');
+    }
+  };
+
   const handleCancel = () => {
     setFlowState('idle');
     setGpsPosition(null);
@@ -209,6 +241,63 @@ export default function ParkingFlow() {
           >
             Awesome!
           </button>
+        </div>
+      )}
+
+      {/* ACQUIRING REPORT LOCATION */}
+      {flowState === 'acquiring_report_location' && (
+        <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center relative overflow-hidden shadow-[0_4px_0_0_#171717]">
+          <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+            <span className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin block"></span>
+          </div>
+          <h3 className="text-sm font-black text-spot-ink">Detecting location…</h3>
+          <p className="text-xs text-spot-muted mt-1 font-bold">Pinpointing this parking spot.</p>
+          <button onClick={handleCancel} className="mt-4 text-xs text-spot-muted hover:text-spot-ink font-black transition-colors relative z-10">Cancel</button>
+        </div>
+      )}
+
+      {/* CONFIRMING REPORT */}
+      {flowState === 'confirming_report' && (
+        <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center shadow-[0_4px_0_0_#171717]">
+          <h3 className="text-xl font-black text-spot-ink mb-2">Parking here?</h3>
+          <p className="text-sm text-spot-muted mb-6 font-bold">Spot will add this location to the map.</p>
+          <div className="flex space-x-3">
+            <button
+              onClick={handleCancel}
+              className="flex-1 py-4 bg-spot-cream hover:bg-black/5 text-spot-ink font-black border-2 border-spot-ink/10 rounded-2xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmReport}
+              className="flex-1 py-4 bg-emerald-500 text-white font-black rounded-2xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200"
+            >
+              Confirm Report
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CREATING REPORT */}
+      {flowState === 'creating_report' && (
+        <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center shadow-[0_4px_0_0_#171717]">
+          <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+            <span className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin block"></span>
+          </div>
+          <h3 className="text-sm font-black text-spot-ink">Saving report…</h3>
+          <p className="text-xs text-spot-muted mt-1 font-bold">Adding to the map.</p>
+        </div>
+      )}
+
+      {/* REPORT ERROR */}
+      {flowState === 'report_error' && (
+        <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center shadow-[0_4px_0_0_#171717]">
+          <h3 className="text-xl font-black text-spot-red mb-2">Couldn't save report</h3>
+          <p className="text-sm text-spot-muted mb-6 font-bold">Please check your connection.</p>
+          <div className="flex space-x-3">
+            <button onClick={handleCancel} className="flex-1 py-4 bg-spot-cream hover:bg-black/5 text-spot-ink font-black border-2 border-spot-ink/10 rounded-2xl transition-colors">Cancel</button>
+            <button onClick={handleConfirmReport} className="flex-1 py-4 bg-emerald-500 text-white font-black rounded-2xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200">Try Again</button>
+          </div>
         </div>
       )}
 
@@ -436,9 +525,9 @@ export default function ParkingFlow() {
         </div>
       )}
 
-      {/* IDLE: Active session card OR "I'm Parked" button */}
+      {/* IDLE: Active session card OR "I'm Parked" button + Report Parking */}
       {flowState === 'idle' && earnedPointsNotification === null && (
-        <div className="flex flex-col items-center justify-center w-full">
+        <div className="flex flex-col items-center justify-center w-full space-y-3">
           {activeSession ? (
             <div className="w-full bg-white text-spot-ink rounded-[2rem] p-6 border-2 border-spot-ink shadow-[0_4px_0_0_#171717]">
               <div className="flex justify-between items-start mb-2">
@@ -473,7 +562,7 @@ export default function ParkingFlow() {
           ) : (
             <button
               onClick={handleStartParkingClick}
-              className="py-5 px-10 bg-spot-orange hover:bg-spot-orange/90 text-white font-black rounded-[2rem] border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200 flex items-center justify-center space-x-3 text-xl uppercase tracking-widest"
+              className="w-full py-5 px-10 bg-spot-orange hover:bg-spot-orange/90 text-white font-black rounded-[2rem] border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200 flex items-center justify-center space-x-3 text-xl uppercase tracking-widest"
             >
               <svg className="w-7 h-7 fill-current" viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
@@ -481,6 +570,14 @@ export default function ParkingFlow() {
               <span>I'm Parked</span>
             </button>
           )}
+
+          <button
+            onClick={handleReportParkingClick}
+            className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black rounded-2xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200 flex items-center justify-center space-x-2"
+          >
+            <span className="text-xl">📍</span>
+            <span>Report Parking</span>
+          </button>
         </div>
       )}
     </div>

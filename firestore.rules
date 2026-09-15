@@ -136,5 +136,19 @@ service cloud.firestore {
       // No updates or deletes allowed. Ledger is append-only.
       allow update, delete: if false;
     }
+
+    // Crowdsourced permanent parking locations
+    match /crowdsourcedParking/{parkingId} {
+      // Anyone authenticated can read all permanent locations
+      allow read: if request.auth != null;
+      
+      // Users can create a report if they are the author
+      allow create: if request.auth != null
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.source == 'user_report';
+      
+      // Permanent locations cannot be arbitrarily updated or deleted by users
+      allow update, delete: if false;
+    }
   }
 }
