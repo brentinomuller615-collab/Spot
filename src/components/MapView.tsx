@@ -77,7 +77,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
       const mapInstance = new maptilersdk.Map({
         container: mapContainerRef.current,
-        style: maptilersdk.MapStyle.TOPO,
+        style: maptilersdk.MapStyle.SATELLITE,
         center: initialCenter,
         zoom: 15,
         navigationControl: false, // We will provide our own floating controls/recenter button
