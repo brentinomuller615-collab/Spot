@@ -150,5 +150,12 @@ service cloud.firestore {
       // Permanent locations cannot be arbitrarily updated or deleted by users
       allow update, delete: if false;
     }
+
+    match /parkingAvailability/{observationId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if false;
+    }
   }
 }

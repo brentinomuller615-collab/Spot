@@ -17,6 +17,7 @@ import { getPublicSpotterIdentity } from '../lib/services/ratingService';
 import { getUserProfile } from '../lib/services/userService';
 import { subscribeToGlobalActiveSessions } from '../lib/services/parkingService';
 import { subscribeToCrowdsourcedParking, CrowdsourcedParking } from '../lib/services/parkingReportService';
+import { subscribeToParkingAvailability, ParkingAvailabilityObservation } from '../lib/services/parkingAvailabilityService';
 
 interface MapViewProps {
   onOpenDeals?: () => void;
@@ -58,6 +59,10 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   // Permanent Walker Parking Locations
   const [permanentParking, setPermanentParking] = useState<CrowdsourcedParking[]>([]);
   const permanentParkingMarkersRef = useRef<maptilersdk.Marker[]>([]);
+
+  // Parking Availability Observations
+  const [availabilityObservations, setAvailabilityObservations] = useState<ParkingAvailabilityObservation[]>([]);
+  const [now, setNow] = useState(Date.now());
 
   const apiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
@@ -119,17 +124,60 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     return () => unsub();
   }, [map]);
 
-  // Render permanent parking markers
+  // Subscribe to parking availability observations
+  useEffect(() => {
+    if (!map) return;
+    const unsub = subscribeToParkingAvailability((observations) => {
+      setAvailabilityObservations(observations);
+    });
+    return () => unsub();
+  }, [map]);
+
+  // Set interval to trigger re-renders for expiration
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Render permanent parking markers with availability
   useEffect(() => {
     if (!map) return;
 
     permanentParkingMarkersRef.current.forEach(m => m.remove());
     permanentParkingMarkersRef.current = [];
 
+    // Filter valid (non-expired) observations
+    const validObservations = availabilityObservations.filter(obs => new Date(obs.expiresAt).getTime() > now);
+
     permanentParking.forEach((loc) => {
+      // Find latest valid observation for this spot
+      const spotObservations = validObservations.filter(obs => obs.parkingAreaId === loc.id);
+      let latestObservation: ParkingAvailabilityObservation | null = null;
+      if (spotObservations.length > 0) {
+        latestObservation = spotObservations.reduce((latest, current) => {
+          return new Date(current.createdAt).getTime() > new Date(latest.createdAt).getTime() ? current : latest;
+        });
+      }
+
       const el = document.createElement('div');
-      el.className = 'w-4 h-4 bg-emerald-500 rounded-sm border border-white shadow-md cursor-pointer transform hover:scale-110 transition-transform';
+      el.className = 'relative flex items-center justify-center cursor-pointer transform hover:scale-110 transition-transform';
       el.style.zIndex = '3'; // Below handoffs, above likelihood zones
+
+      let badgeHTML = '';
+      if (latestObservation) {
+        badgeHTML = `
+          <div class="absolute -top-3 -right-3 bg-spot-ink text-white text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full shadow-md border border-white z-20">
+            +${latestObservation.availableBays}
+          </div>
+        `;
+      }
+
+      el.innerHTML = `
+        <div class="w-4 h-4 bg-emerald-500 rounded-sm border border-white shadow-md relative z-10"></div>
+        ${badgeHTML}
+      `;
 
       const popup = new maptilersdk.Popup({ offset: 10 }).setHTML(
         `<div class="p-1 text-xs font-bold text-slate-800">Permanent Parking Area</div>`
@@ -142,7 +190,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
 
       permanentParkingMarkersRef.current.push(marker);
     });
-  }, [map, permanentParking]);
+  }, [map, permanentParking, availabilityObservations, now]);
 
   // Subscribe to real active parking sessions globally for handoffs
   useEffect(() => {

@@ -15,7 +15,7 @@ export interface GeolocationError {
   message: string;
 }
 
-export function getCurrentPosition(): Promise<GeolocationResult> {
+export async function getCurrentPosition(): Promise<GeolocationResult> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject({

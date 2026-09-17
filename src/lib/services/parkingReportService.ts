@@ -13,7 +13,7 @@ export interface CrowdsourcedParking {
   status: string;
 }
 
-export async function reportParkingLocation(uid: string, latitude: number, longitude: number, accuracy?: number): Promise<CrowdsourcedParking> {
+export async function reportParkingLocation(uid: string, latitude: number, longitude: number, accuracy?: number): Promise<{report: CrowdsourcedParking, isExisting: boolean}> {
   const colRef = collection(db, 'crowdsourcedParking');
   
   // 1. Check for duplicates
@@ -28,14 +28,17 @@ export async function reportParkingLocation(uid: string, latitude: number, longi
     if (distance <= 20) {
       // Duplicate found, just return it instead of creating a new one
       return {
-        id: docSnap.id,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        createdBy: data.createdBy,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        source: data.source,
-        status: data.status,
-        accuracy: data.accuracy,
+        report: {
+          id: docSnap.id,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          createdBy: data.createdBy,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          source: data.source,
+          status: data.status,
+          accuracy: data.accuracy,
+        },
+        isExisting: true
       };
     }
   }
@@ -57,14 +60,17 @@ export async function reportParkingLocation(uid: string, latitude: number, longi
   const docRef = await addDoc(colRef, newReport);
 
   return {
-    id: docRef.id,
-    latitude,
-    longitude,
-    accuracy: accuracy || undefined,
-    createdBy: uid,
-    createdAt: new Date().toISOString(),
-    source: 'user_report',
-    status: 'active'
+    report: {
+      id: docRef.id,
+      latitude,
+      longitude,
+      accuracy: accuracy || undefined,
+      createdBy: uid,
+      createdAt: new Date().toISOString(),
+      source: 'user_report',
+      status: 'active'
+    },
+    isExisting: false
   };
 }
 

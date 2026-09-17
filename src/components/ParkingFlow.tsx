@@ -6,6 +6,7 @@ import { GeolocationResult, GeolocationError } from '../lib/services/geolocation
 import { calculateDistanceMeters } from '../lib/utils/geo';
 import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
 import { reportParkingLocation } from '../lib/services/parkingReportService';
+import { reportParkingAvailability } from '../lib/services/parkingAvailabilityService';
 
 // Flow states:
 // 'idle'               - default: show "I'm Parked" button (or active session card)
@@ -18,7 +19,8 @@ import { reportParkingLocation } from '../lib/services/parkingReportService';
 // 'complete_error'     - Firestore update failed; user can retry
 // 'confirm_leaving'    - confirmation panel before ending session
 type FlowState = 'idle' | 'acquiring_location' | 'location_error' | 'selecting_duration' | 'creating_session' | 'create_error' | 'completing_session' | 'complete_error' | 'confirm_leaving'
-  | 'acquiring_report_location' | 'confirming_report' | 'creating_report' | 'report_error';
+  | 'acquiring_report_location' | 'confirming_report' | 'creating_report' | 'report_error'
+  | 'selecting_availability' | 'saving_availability' | 'availability_error';
 
 const durations = ['15 min', '30 min', '1 hour', '2 hours', '3+ hours', 'Skip'];
 
@@ -39,6 +41,9 @@ export default function ParkingFlow() {
   const [flowState, setFlowState] = useState<FlowState>('idle');
   const [selectedDuration, setSelectedDuration] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState('00:00');
+
+  // For parking availability observation
+  const [matchedParkingAreaId, setMatchedParkingAreaId] = useState<string | null>(null);
 
   // Captured real GPS position — set once geolocation succeeds
   const [gpsPosition, setGpsPosition] = useState<GeolocationResult | null>(null);
@@ -223,12 +228,35 @@ export default function ParkingFlow() {
         return;
       }
 
-      await reportParkingLocation(user.id, lat, lng, gpsPosition.accuracy);
-      setTimeout(() => setFlowState('idle'), 800);
+      const result = await reportParkingLocation(user.id, lat, lng, gpsPosition.accuracy);
+      
+      if (result.isExisting) {
+        setMatchedParkingAreaId(result.report.id);
+        setFlowState('selecting_availability');
+      } else {
+        setTimeout(() => setFlowState('idle'), 800);
+      }
     } catch (err: any) {
       console.error('Failed to report parking:', err);
       setReportErrorMsg(err?.message || String(err));
       setFlowState('report_error');
+    }
+  };
+
+  const handleSelectAvailability = async (bays: '1' | '2' | '3' | '4' | '5+') => {
+    if (!user || !matchedParkingAreaId) return;
+
+    setFlowState('saving_availability');
+    try {
+      await reportParkingAvailability(matchedParkingAreaId, bays, user.id);
+      setTimeout(() => {
+        setFlowState('idle');
+        setMatchedParkingAreaId(null);
+      }, 800);
+    } catch (err: any) {
+      console.error('Failed to save availability:', err);
+      setReportErrorMsg(err?.message || String(err));
+      setFlowState('availability_error');
     }
   };
 
@@ -238,6 +266,7 @@ export default function ParkingFlow() {
     setGpsError(null);
     setGpsAddress(null);
     setSelectedDuration(null);
+    setMatchedParkingAreaId(null);
   };
 
   // Format coordinates for display
@@ -326,6 +355,53 @@ export default function ParkingFlow() {
           <div className="flex space-x-3">
             <button onClick={handleCancel} className="flex-1 py-4 bg-spot-cream hover:bg-black/5 text-spot-ink font-black border-2 border-spot-ink/10 rounded-2xl transition-colors">Cancel</button>
             <button onClick={handleConfirmReport} className="flex-1 py-4 bg-emerald-500 text-white font-black rounded-2xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200">Try Again</button>
+          </div>
+        </div>
+      )}
+
+      {/* SELECTING AVAILABILITY */}
+      {flowState === 'selecting_availability' && (
+        <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center shadow-[0_4px_0_0_#171717]">
+          <h3 className="text-xl font-black text-spot-ink mb-2">How many bays did you spot?</h3>
+          <p className="text-sm text-spot-muted mb-4 font-bold">Help others find a spot here.</p>
+          <div className="flex justify-center space-x-2 mb-6">
+            {(['1', '2', '3', '4', '5+'] as const).map(bay => (
+              <button
+                key={bay}
+                onClick={() => handleSelectAvailability(bay)}
+                className="w-12 h-12 flex items-center justify-center bg-spot-cream hover:bg-spot-ink hover:text-white text-spot-ink font-black border-2 border-spot-ink rounded-xl transition-colors text-lg"
+              >
+                {bay}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleCancel}
+            className="w-full py-4 bg-spot-cream hover:bg-black/5 text-spot-ink font-black border-2 border-spot-ink/10 rounded-2xl transition-colors"
+          >
+            Skip
+          </button>
+        </div>
+      )}
+
+      {/* SAVING AVAILABILITY */}
+      {flowState === 'saving_availability' && (
+        <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center shadow-[0_4px_0_0_#171717]">
+          <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+            <span className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin block"></span>
+          </div>
+          <h3 className="text-sm font-black text-spot-ink">Saving observation…</h3>
+        </div>
+      )}
+
+      {/* AVAILABILITY ERROR */}
+      {flowState === 'availability_error' && (
+        <div className="bg-white rounded-3xl p-6 border-2 border-spot-ink text-center shadow-[0_4px_0_0_#171717]">
+          <h3 className="text-xl font-black text-spot-red mb-2">Couldn't save observation</h3>
+          <p className="text-sm text-spot-muted mb-6 font-bold">Please check your connection.</p>
+          <div className="flex space-x-3">
+            <button onClick={handleCancel} className="flex-1 py-4 bg-spot-cream hover:bg-black/5 text-spot-ink font-black border-2 border-spot-ink/10 rounded-2xl transition-colors">Cancel</button>
+            <button onClick={() => setFlowState('selecting_availability')} className="flex-1 py-4 bg-emerald-500 text-white font-black rounded-2xl border-2 border-spot-ink shadow-[0_4px_0_0_#171717] active:shadow-none active:translate-y-1 transition-all duration-200">Try Again</button>
           </div>
         </div>
       )}
