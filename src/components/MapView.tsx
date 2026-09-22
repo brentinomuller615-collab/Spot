@@ -162,31 +162,57 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
       }
 
       const el = document.createElement('div');
-      el.className = 'relative flex items-center justify-center cursor-pointer transform hover:scale-110 transition-transform';
+      el.className = 'relative flex items-center justify-center cursor-pointer group';
       el.style.zIndex = '3'; // Below handoffs, above likelihood zones
 
       let badgeHTML = '';
+      let badgeLabel = '';
       if (latestObservation) {
+        badgeLabel = latestObservation.availableBays === '5+' ? '5+' : `+${latestObservation.availableBays}`;
+        
         badgeHTML = `
-          <div class="absolute -top-3 -right-3 bg-spot-ink text-white text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full shadow-md border border-white z-20">
-            +${latestObservation.availableBays}
+          <div id="badge-${loc.id}" class="absolute top-0 right-0 bg-spot-ink text-white text-[11px] font-bold px-1.5 py-0.5 rounded shadow-md border border-slate-600 z-20 transition-transform transform hover:scale-110">
+            ${badgeLabel}
           </div>
         `;
       }
 
       el.innerHTML = `
-        <div class="w-4 h-4 bg-emerald-500 rounded-sm border border-white shadow-md relative z-10"></div>
+        <div class="w-11 h-8 bg-[#34D399]/25 border border-[#34D399]/60 rounded-xl relative z-10 transition-colors group-hover:bg-[#34D399]/40"></div>
         ${badgeHTML}
       `;
 
-      const popup = new maptilersdk.Popup({ offset: 10 }).setHTML(
-        `<div class="p-1 text-xs font-bold text-slate-800">Permanent Parking Area</div>`
-      );
-
       const marker = new maptilersdk.Marker({ element: el })
         .setLngLat([loc.longitude, loc.latitude])
-        .setPopup(popup)
         .addTo(map);
+
+      if (latestObservation) {
+        const badgeEl = el.querySelector(`#badge-${loc.id}`);
+        if (badgeEl) {
+          badgeEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            const obsTime = new Date(latestObservation.createdAt).getTime();
+            const ageMs = now - obsTime;
+            const ageMinutes = Math.max(0, Math.floor(ageMs / 60000));
+            
+            const baysText = latestObservation.availableBays === '5+' ? '5+ bays' : `${latestObservation.availableBays} bays`;
+            const timeText = ageMinutes === 0 ? 'Reported just now' : `Reported ${ageMinutes} minute${ageMinutes === 1 ? '' : 's'} ago`;
+            
+            const popupHtml = `
+              <div class="p-2 min-w-[140px] text-center">
+                <div class="text-sm font-bold text-slate-800">${baysText} recently spotted available</div>
+                <div class="text-[10px] text-slate-500 mt-1">${timeText}</div>
+              </div>
+            `;
+            
+            new maptilersdk.Popup({ offset: 15, closeButton: false, closeOnClick: true })
+              .setLngLat([loc.longitude, loc.latitude])
+              .setHTML(popupHtml)
+              .addTo(map);
+          });
+        }
+      }
 
       permanentParkingMarkersRef.current.push(marker);
     });
