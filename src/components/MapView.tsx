@@ -5,6 +5,7 @@ import * as maptilersdk from '@maptiler/sdk';
 import { ParkingSession, User, Business } from '../lib/types';
 import { useParkingSession } from '../hooks/useParkingSession';
 import { getAllBusinesses } from '../lib/services/dealsService';
+import { matchPoiToSpotBusiness } from '../lib/utils/poiMatching';
 import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
 import type { MunicipalParkingLocation } from '../lib/municipalParking';
 import { getLiveParkingActivity, LiveParkingActivity } from '../lib/services/liveActivityService';
@@ -65,7 +66,20 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const [availabilityObservations, setAvailabilityObservations] = useState<ParkingAvailabilityObservation[]>([]);
   const [now, setNow] = useState(Date.now());
 
+  // POI Layer for Spot Businesses
+  const [spotBusinesses, setSpotBusinesses] = useState<Business[]>([]);
+  const haloMarkersRef = useRef<Map<string, maptilersdk.Marker>>(new Map());
+
   const apiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+
+  // Fetch businesses once on mount
+  useEffect(() => {
+    let mounted = true;
+    getAllBusinesses().then(businesses => {
+      if (mounted) setSpotBusinesses(businesses);
+    });
+    return () => { mounted = false; };
+  }, []);
 
 
   // Initialize Map
@@ -1054,6 +1068,101 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     };
   }, [selectedDestination, municipalLocations]);
 
+  // --- Spot Business Halo Effect ---
+  useEffect(() => {
+    if (!map) return;
+
+    let debounceTimer: NodeJS.Timeout;
+
+    const renderHalos = () => {
+      // MapTiler STREETS POIs typically show up at z14+
+      if (map.getZoom() < 14) {
+        haloMarkersRef.current.forEach(marker => marker.remove());
+        haloMarkersRef.current.clear();
+        return;
+      }
+
+      try {
+        // Query rendered POI features from the STREETS style
+        const poiLayers = ['Shopping', 'Food', 'Healthcare', 'Culture', 'Public', 'Sport', 'Education'];
+        const existingLayers = poiLayers.filter(l => map.getLayer(l));
+        
+        if (existingLayers.length === 0) return;
+
+        const features = map.queryRenderedFeatures({ layers: existingLayers });
+        
+        const newVisibleIds = new Set<string>();
+
+        features.forEach(feature => {
+          if (!feature.properties?.name) return;
+          
+          let lngLat: [number, number] | null = null;
+          if (feature.geometry.type === 'Point') {
+            lngLat = feature.geometry.coordinates as [number, number];
+          } else {
+            return;
+          }
+
+          // Match against Spot businesses
+          const spotBusiness = matchPoiToSpotBusiness(
+            feature.properties.name,
+            lngLat[1],
+            lngLat[0],
+            spotBusinesses
+          );
+
+          if (spotBusiness) {
+            // Generate a unique ID for this match based on coordinates to avoid duplicates
+            const id = `${lngLat[0]},${lngLat[1]}`;
+            newVisibleIds.add(id);
+
+            if (haloMarkersRef.current.has(id)) return;
+
+            // Spot Business Halo visual
+            const el = document.createElement('div');
+            // The halo is perfectly circular, sits behind the native icon and pulses.
+            // Using spot-orange as the primary brand color for the glow.
+            el.className = 'w-10 h-10 rounded-full border-4 border-spot-orange/60 bg-spot-orange/20 animate-pulse pointer-events-none';
+
+            const marker = new maptilersdk.Marker({ element: el, anchor: 'center' })
+              .setLngLat(lngLat)
+              .addTo(map);
+            
+            haloMarkersRef.current.set(id, marker);
+          }
+        });
+
+        // Cleanup halos that are no longer visible
+        for (const [id, marker] of haloMarkersRef.current.entries()) {
+          if (!newVisibleIds.has(id)) {
+            marker.remove();
+            haloMarkersRef.current.delete(id);
+          }
+        }
+
+      } catch (err) {
+        console.warn('Failed to render Spot halos:', err);
+      }
+    };
+
+    const handleMapChange = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderHalos, 200);
+    };
+
+    map.on('moveend', handleMapChange);
+    map.on('styledata', handleMapChange);
+    map.on('idle', handleMapChange);
+
+    handleMapChange();
+
+    return () => {
+      clearTimeout(debounceTimer);
+      map.off('moveend', handleMapChange);
+      map.off('styledata', handleMapChange);
+      map.off('idle', handleMapChange);
+    };
+  }, [map, spotBusinesses, mapStyle]);
 
   const handleRecenter = async () => {
     if (!map) return;
