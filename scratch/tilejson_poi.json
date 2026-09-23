@@ -1,0 +1,16 @@
+{
+  "id": "poi",
+  "fields": {
+    "agg_stop": "Number",
+    "class": "String",
+    "indoor": "Number",
+    "layer": "Number",
+    "level": "Number",
+    "name": "String",
+    "rank": "Number",
+    "subclass": "String"
+  },
+  "minzoom": 11,
+  "maxzoom": 15,
+  "mvt_buffer": 1024
+}

@@ -1,0 +1,414 @@
+[
+  {
+    "id": "Background"
+  },
+  {
+    "id": "Glacier",
+    "source": "maptiler_planet",
+    "source_layer": "landcover"
+  },
+  {
+    "id": "Crop",
+    "source": "maptiler_planet",
+    "source_layer": "globallandcover"
+  },
+  {
+    "id": "Scrub",
+    "source": "maptiler_planet",
+    "source_layer": "globallandcover"
+  },
+  {
+    "id": "Forest",
+    "source": "maptiler_planet",
+    "source_layer": "globallandcover"
+  },
+  {
+    "id": "Residential",
+    "source": "maptiler_planet",
+    "source_layer": "landuse"
+  },
+  {
+    "id": "Industrial",
+    "source": "maptiler_planet",
+    "source_layer": "landuse"
+  },
+  {
+    "id": "Pedestrian",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Dam",
+    "source": "maptiler_planet",
+    "source_layer": "landuse"
+  },
+  {
+    "id": "Garages",
+    "source": "maptiler_planet",
+    "source_layer": "landuse"
+  },
+  {
+    "id": "Cemetery",
+    "source": "maptiler_planet",
+    "source_layer": "landuse"
+  },
+  {
+    "id": "Hospital",
+    "source": "maptiler_planet",
+    "source_layer": "landuse"
+  },
+  {
+    "id": "Stadium",
+    "source": "maptiler_planet",
+    "source_layer": "landuse"
+  },
+  {
+    "id": "Wood",
+    "source": "maptiler_planet",
+    "source_layer": "landcover"
+  },
+  {
+    "id": "Grass",
+    "source": "maptiler_planet",
+    "source_layer": "landcover"
+  },
+  {
+    "id": "Sand",
+    "source": "maptiler_planet",
+    "source_layer": "landcover"
+  },
+  {
+    "id": "Hillshade",
+    "source": "terrain_rgb"
+  },
+  {
+    "id": "Contour index",
+    "source": "contours",
+    "source_layer": "contour"
+  },
+  {
+    "id": "Glacier contour index",
+    "source": "contours",
+    "source_layer": "contour"
+  },
+  {
+    "id": "Contour",
+    "source": "contours",
+    "source_layer": "contour"
+  },
+  {
+    "id": "Glacier contour",
+    "source": "contours",
+    "source_layer": "contour"
+  },
+  {
+    "id": "Contour labels",
+    "source": "contours",
+    "source_layer": "contour"
+  },
+  {
+    "id": "Glacier contour labels",
+    "source": "contours",
+    "source_layer": "contour"
+  },
+  {
+    "id": "River tunnel",
+    "source": "maptiler_planet",
+    "source_layer": "waterway"
+  },
+  {
+    "id": "River",
+    "source": "maptiler_planet",
+    "source_layer": "waterway"
+  },
+  {
+    "id": "River intermittent",
+    "source": "maptiler_planet",
+    "source_layer": "waterway"
+  },
+  {
+    "id": "Waterway",
+    "source": "maptiler_planet",
+    "source_layer": "waterway"
+  },
+  {
+    "id": "Waterway intermittent",
+    "source": "maptiler_planet",
+    "source_layer": "waterway"
+  },
+  {
+    "id": "Water",
+    "source": "maptiler_planet",
+    "source_layer": "water"
+  },
+  {
+    "id": "Water intermittent",
+    "source": "maptiler_planet",
+    "source_layer": "water"
+  },
+  {
+    "id": "Runway",
+    "source": "maptiler_planet",
+    "source_layer": "aeroway"
+  },
+  {
+    "id": "Taxiway",
+    "source": "maptiler_planet",
+    "source_layer": "aeroway"
+  },
+  {
+    "id": "Ferry",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Tunnel outline",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Tunnel",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Railway tunnel",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Railway tunnel hatching",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Tunnel path",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Bridge",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Pier",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Pier road",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Minor road outline",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Major road outline",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Highway outline",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Minor road",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Major road",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Highway",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Path minor",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Path",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Major railway",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Major railway hatching",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Minor railway",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Minor railway hatching",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Building",
+    "source": "maptiler_planet",
+    "source_layer": "building"
+  },
+  {
+    "id": "Building 3D",
+    "source": "maptiler_planet",
+    "source_layer": "building"
+  },
+  {
+    "id": "Minor lift",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Minor lift dash",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Cable car",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Cable car dash",
+    "source": "maptiler_planet",
+    "source_layer": "transportation"
+  },
+  {
+    "id": "Aerialway labels",
+    "source": "maptiler_planet",
+    "source_layer": "transportation_name"
+  },
+  {
+    "id": "Other border",
+    "source": "maptiler_planet",
+    "source_layer": "boundary"
+  },
+  {
+    "id": "Disputed border",
+    "source": "maptiler_planet",
+    "source_layer": "boundary"
+  },
+  {
+    "id": "Country border",
+    "source": "maptiler_planet",
+    "source_layer": "boundary"
+  },
+  {
+    "id": "River labels",
+    "source": "maptiler_planet",
+    "source_layer": "waterway"
+  },
+  {
+    "id": "Lakeline labels",
+    "source": "maptiler_planet",
+    "source_layer": "water_name"
+  },
+  {
+    "id": "Ocean labels",
+    "source": "maptiler_planet",
+    "source_layer": "water_name"
+  },
+  {
+    "id": "Sea labels",
+    "source": "maptiler_planet",
+    "source_layer": "water_name"
+  },
+  {
+    "id": "Lake labels",
+    "source": "maptiler_planet",
+    "source_layer": "water_name"
+  },
+  {
+    "id": "Road labels",
+    "source": "maptiler_planet",
+    "source_layer": "transportation_name"
+  },
+  {
+    "id": "Volcano labels (US)",
+    "source": "maptiler_planet",
+    "source_layer": "mountain_peak"
+  },
+  {
+    "id": "Volcano labels",
+    "source": "maptiler_planet",
+    "source_layer": "mountain_peak"
+  },
+  {
+    "id": "Peak labels (US)",
+    "source": "maptiler_planet",
+    "source_layer": "mountain_peak"
+  },
+  {
+    "id": "Peak labels",
+    "source": "maptiler_planet",
+    "source_layer": "mountain_peak"
+  },
+  {
+    "id": "Place labels",
+    "source": "maptiler_planet",
+    "source_layer": "place"
+  },
+  {
+    "id": "Village labels",
+    "source": "maptiler_planet",
+    "source_layer": "place"
+  },
+  {
+    "id": "Airport labels",
+    "source": "maptiler_planet",
+    "source_layer": "aerodrome_label"
+  },
+  {
+    "id": "Protected area labels",
+    "source": "maptiler_planet",
+    "source_layer": "park"
+  },
+  {
+    "id": "Town labels",
+    "source": "maptiler_planet",
+    "source_layer": "place"
+  },
+  {
+    "id": "State labels",
+    "source": "maptiler_planet",
+    "source_layer": "place"
+  },
+  {
+    "id": "City labels",
+    "source": "maptiler_planet",
+    "source_layer": "place"
+  },
+  {
+    "id": "National park labels",
+    "source": "maptiler_planet",
+    "source_layer": "park"
+  },
+  {
+    "id": "Country labels",
+    "source": "maptiler_planet",
+    "source_layer": "place"
+  },
+  {
+    "id": "Continent labels",
+    "source": "maptiler_planet",
+    "source_layer": "place"
+  }
+]

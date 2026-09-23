@@ -161,6 +161,56 @@ export async function getBusinessById(businessId: string): Promise<Business | nu
   return null;
 }
 
+let cachedBusinesses: Business[] | null = null;
+let businessesCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+export async function getAllBusinesses(): Promise<Business[]> {
+  const now = Date.now();
+  if (cachedBusinesses && (now - businessesCacheTime) < CACHE_TTL) {
+    return cachedBusinesses;
+  }
+
+  const results: Business[] = [];
+
+  try {
+    const busCol = collection(db, 'businesses');
+    const q = query(busCol, where('active', '==', true));
+    const snapshot = await getDocs(q);
+    
+    for (const docSnapshot of snapshot.docs) {
+      const data = docSnapshot.data();
+      results.push({
+        id: docSnapshot.id,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        address: data.address,
+        hours: data.hours,
+        active: data.active,
+        createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+      } as Business);
+    }
+  } catch (err) {
+    console.error('Failed to fetch businesses:', err);
+  }
+
+  // Optionally include mock businesses in development only
+  if (process.env.NODE_ENV === 'development') {
+    for (const mock of MOCK_BUSINESSES) {
+      if (mock.active && !results.some(r => r.id === mock.id)) {
+        results.push(mock);
+      }
+    }
+  }
+
+  cachedBusinesses = results;
+  businessesCacheTime = now;
+  return results;
+}
+
 export async function createDeal(businessId: string, title: string, description: string): Promise<Deal> {
   const dealsCol = collection(db, 'deals');
   const docRef = await addDoc(dealsCol, {

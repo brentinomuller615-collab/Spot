@@ -1,0 +1,145 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "ref": "osm:n8058363604",
+        "country_code": "za",
+        "feature_tags": {
+          "website": "https://quoinrock.co.za/gate-restaurant",
+          "phone": "+27218884750",
+          "amenity": "restaurant",
+          "cuisine": "international",
+          "addr:street": "Knorhoek road",
+          "addr:postcode": "7600",
+          "addr:city": "Stellenbosch"
+        },
+        "categories": [
+          "restaurant",
+          "international"
+        ]
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.866988457739353,
+          -33.87804281728907
+        ]
+      },
+      "bbox": [
+        18.866988457739357,
+        -33.87804281728907,
+        18.866988457739357,
+        -33.87804281728907
+      ],
+      "center": [
+        18.866988457739353,
+        -33.87804281728907
+      ],
+      "place_name": "Gåte Restaurant, South Africa",
+      "place_type": [
+        "poi"
+      ],
+      "relevance": 1,
+      "id": "poi.34178690",
+      "text": "Gåte Restaurant",
+      "context": [
+        {
+          "ref": "osm:w123458261",
+          "id": "address.11244496",
+          "text": "Muratie Road",
+          "country_code": "za",
+          "kind": "street"
+        },
+        {
+          "ref": "osm:n14061213913",
+          "id": "postal_code.1309865",
+          "text": "7600",
+          "country_code": "za"
+        },
+        {
+          "ref": "osm:n12725033947",
+          "id": "place.3790869",
+          "text": "Quoin Rock",
+          "country_code": "za",
+          "kind": "place",
+          "place_designation": "farm"
+        },
+        {
+          "ref": "osm:r6582271",
+          "id": "locality.72033",
+          "text": "Stellenbosch Ward 6",
+          "country_code": "za",
+          "kind": "admin_area"
+        },
+        {
+          "ref": "osm:r79655",
+          "id": "municipality.4038",
+          "text": "Stellenbosch Local Municipality",
+          "country_code": "za",
+          "wikidata": "Q522028",
+          "kind": "admin_area"
+        },
+        {
+          "ref": "osm:w1429902681",
+          "id": "major_landform.3191446",
+          "text": "Klippiesrivier",
+          "country_code": "za",
+          "feature_tags": {
+            "seasonal": "yes",
+            "waterway": "stream",
+            "intermittent": "yes"
+          },
+          "categories": [
+            "stream"
+          ]
+        },
+        {
+          "ref": "osm:r79652",
+          "id": "county.131",
+          "text": "Cape Winelands District Municipality",
+          "country_code": "za",
+          "wikidata": "Q1974486",
+          "kind": "admin_area"
+        },
+        {
+          "ref": "osm:r80501",
+          "id": "region.119",
+          "text": "Western Cape",
+          "country_code": "za",
+          "wikidata": "Q127167",
+          "kind": "admin_area"
+        },
+        {
+          "ref": "osm:r87565",
+          "id": "country.112",
+          "text": "South Africa",
+          "country_code": "za",
+          "wikidata": "Q258",
+          "kind": "admin_area"
+        },
+        {
+          "ref": "osm:n36966057",
+          "id": "continental_marine.2",
+          "text": "Africa",
+          "wikidata": "Q15",
+          "feature_tags": {
+            "note": "https://lists.openstreetmap.org/pipermail/talk/2019-December/083609.html",
+            "sqkm": "30221532",
+            "place": "continent",
+            "wikipedia": "en:Africa",
+            "population": "1100000000"
+          },
+          "categories": [
+            "continent"
+          ]
+        }
+      ]
+    }
+  ],
+  "query": [
+    "restaurant"
+  ],
+  "attribution": "<a href=\"https://www.maptiler.com/copyright/\" target=\"_blank\">&copy; MapTiler</a> <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">&copy; OpenStreetMap contributors</a>"
+}

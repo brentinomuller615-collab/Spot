@@ -2,8 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as maptilersdk from '@maptiler/sdk';
-import { ParkingSession, User } from '../lib/types';
+import { ParkingSession, User, Business } from '../lib/types';
 import { useParkingSession } from '../hooks/useParkingSession';
+import { getAllBusinesses } from '../lib/services/dealsService';
 import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
 import type { MunicipalParkingLocation } from '../lib/municipalParking';
 import { getLiveParkingActivity, LiveParkingActivity } from '../lib/services/liveActivityService';
@@ -28,7 +29,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maptilersdk.Map | null>(null);
   const [map, setMap] = useState<maptilersdk.Map | null>(null);
-  const [mapStyle, setMapStyle] = useState<any>(maptilersdk.MapStyle.TOPO);
+  const [mapStyle, setMapStyle] = useState<any>(maptilersdk.MapStyle.STREETS);
   const userMarkerRef = useRef<maptilersdk.Marker | null>(null);
   const destMarkerRef = useRef<maptilersdk.Marker | null>(null);
   const activeSessionMarkerRef = useRef<maptilersdk.Marker | null>(null);
@@ -65,6 +66,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const [now, setNow] = useState(Date.now());
 
   const apiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
+
 
   // Initialize Map
   useEffect(() => {
@@ -1052,6 +1054,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     };
   }, [selectedDestination, municipalLocations]);
 
+
   const handleRecenter = async () => {
     if (!map) return;
 
@@ -1112,8 +1115,8 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         {/* Map Style Toggle */}
         <div className="flex bg-spot-cream border-2 border-spot-ink rounded-2xl shadow-[0_4px_0_0_#171717] p-1 gap-1">
           <button
-            onClick={() => setMapStyle(maptilersdk.MapStyle.TOPO)}
-            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${mapStyle === maptilersdk.MapStyle.TOPO ? 'bg-spot-ink text-white' : 'text-spot-ink hover:bg-black/5'}`}
+            onClick={() => setMapStyle(maptilersdk.MapStyle.STREETS)}
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors ${mapStyle === maptilersdk.MapStyle.STREETS ? 'bg-spot-ink text-white' : 'text-spot-ink hover:bg-black/5'}`}
           >
             Map
           </button>
