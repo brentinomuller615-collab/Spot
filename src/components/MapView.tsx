@@ -2,10 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as maptilersdk from '@maptiler/sdk';
-import { ParkingSession, User, Business } from '../lib/types';
+import { ParkingSession, User, Business, Deal } from '../lib/types';
 import { useParkingSession } from '../hooks/useParkingSession';
-import { getAllBusinesses } from '../lib/services/dealsService';
-import { matchPoiToSpotBusiness } from '../lib/utils/poiMatching';
+import { subscribeToBusinesses, getDealsForBusiness } from '../lib/services/dealsService';
 import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
 import type { MunicipalParkingLocation } from '../lib/municipalParking';
 import { getLiveParkingActivity, LiveParkingActivity } from '../lib/services/liveActivityService';
@@ -66,19 +65,22 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
   const [availabilityObservations, setAvailabilityObservations] = useState<ParkingAvailabilityObservation[]>([]);
   const [now, setNow] = useState(Date.now());
 
-  // POI Layer for Spot Businesses
+  // Spot Business Markers — permanent, real-time
   const [spotBusinesses, setSpotBusinesses] = useState<Business[]>([]);
-  const haloMarkersRef = useRef<Map<string, maptilersdk.Marker>>(new Map());
+  const businessMarkersRef = useRef<Map<string, maptilersdk.Marker>>(new Map());
+  // Business popup (React-rendered overlay)
+  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [businessDeals, setBusinessDeals] = useState<Deal[]>([]);
+  const [dealsLoading, setDealsLoading] = useState(false);
 
   const apiKey = process.env.NEXT_PUBLIC_MAPTILER_KEY;
 
-  // Fetch businesses once on mount
+  // Subscribe to businesses in real time
   useEffect(() => {
-    let mounted = true;
-    getAllBusinesses().then(businesses => {
-      if (mounted) setSpotBusinesses(businesses);
+    const unsub = subscribeToBusinesses((businesses) => {
+      setSpotBusinesses(businesses);
     });
-    return () => { mounted = false; };
+    return () => unsub();
   }, []);
 
 
@@ -1068,101 +1070,150 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
     };
   }, [selectedDestination, municipalLocations]);
 
-  // --- Spot Business Halo Effect ---
+  // --- Permanent Spot Business Markers ---
+  // Renders a circular marker for each active business from Firestore.
+  // Uses the business imageUrl as the marker image; falls back to a knife-and-fork icon.
+  // Re-runs whenever the map instance or the businesses list changes.
   useEffect(() => {
     if (!map) return;
 
-    let debounceTimer: NodeJS.Timeout;
+    // Knife-and-fork SVG for businesses without a profile image
+    const DEFAULT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="#f97316"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>`;
 
-    const renderHalos = () => {
-      // MapTiler STREETS POIs typically show up at z14+
-      if (map.getZoom() < 14) {
-        haloMarkersRef.current.forEach(marker => marker.remove());
-        haloMarkersRef.current.clear();
+    // Helper: build the DOM element for one business marker
+    const buildMarkerElement = (business: Business): HTMLDivElement => {
+      const el = document.createElement('div');
+      el.className = 'relative cursor-pointer group';
+      el.style.zIndex = '5';
+
+      const imageUrl = business.imageUrl || business.logoUrl;
+
+      const inner = document.createElement('div');
+      inner.style.cssText = `
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 2.5px solid #f97316;
+        background: #fff7ed;
+        box-shadow: 0 2px 8px rgba(249,115,22,0.35), 0 0 0 1.5px #171717;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      `;
+
+      if (imageUrl) {
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        img.alt = business.name;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+        inner.appendChild(img);
+      } else {
+        inner.innerHTML = DEFAULT_ICON_SVG;
+      }
+
+      // Hover scale via JS event (marker elements are outside React)
+      el.addEventListener('mouseenter', () => {
+        inner.style.transform = 'scale(1.15)';
+        inner.style.boxShadow = '0 4px 14px rgba(249,115,22,0.5), 0 0 0 1.5px #171717';
+      });
+      el.addEventListener('mouseleave', () => {
+        inner.style.transform = '';
+        inner.style.boxShadow = '0 2px 8px rgba(249,115,22,0.35), 0 0 0 1.5px #171717';
+      });
+
+      el.appendChild(inner);
+      return el;
+    };
+
+    const nextIds = new Set<string>(
+      spotBusinesses
+        .filter(b => b.active && typeof b.latitude === 'number' && typeof b.longitude === 'number')
+        .map(b => b.id)
+    );
+
+    // Remove markers for businesses that are no longer in the list
+    for (const [id, marker] of businessMarkersRef.current.entries()) {
+      if (!nextIds.has(id)) {
+        marker.remove();
+        businessMarkersRef.current.delete(id);
+      }
+    }
+
+    // Add/update markers
+    spotBusinesses.forEach(business => {
+      if (!business.active) return;
+      if (typeof business.latitude !== 'number' || typeof business.longitude !== 'number') return;
+
+      if (businessMarkersRef.current.has(business.id)) {
+        // Update position in case address was edited
+        businessMarkersRef.current.get(business.id)!.setLngLat([business.longitude, business.latitude]);
         return;
       }
 
-      try {
-        // Query rendered POI features from the STREETS style
-        const poiLayers = ['Shopping', 'Food', 'Healthcare', 'Culture', 'Public', 'Sport', 'Education'];
-        const existingLayers = poiLayers.filter(l => map.getLayer(l));
-        
-        if (existingLayers.length === 0) return;
+      const el = buildMarkerElement(business);
 
-        const features = map.queryRenderedFeatures({ layers: existingLayers });
-        
-        const newVisibleIds = new Set<string>();
+      el.addEventListener('click', () => {
+        setSelectedBusiness(business);
+        setBusinessDeals([]);
+        setDealsLoading(true);
+        getDealsForBusiness(business.id)
+          .then(deals => setBusinessDeals(deals.filter(d => d.active)))
+          .catch(() => setBusinessDeals([]))
+          .finally(() => setDealsLoading(false));
+      });
 
-        features.forEach(feature => {
-          if (!feature.properties?.name) return;
-          
-          let lngLat: [number, number] | null = null;
-          if (feature.geometry.type === 'Point') {
-            lngLat = feature.geometry.coordinates as [number, number];
-          } else {
-            return;
-          }
+      const marker = new maptilersdk.Marker({ element: el, anchor: 'center' })
+        .setLngLat([business.longitude, business.latitude])
+        .addTo(map);
 
-          // Match against Spot businesses
-          const spotBusiness = matchPoiToSpotBusiness(
-            feature.properties.name,
-            lngLat[1],
-            lngLat[0],
-            spotBusinesses
-          );
+      businessMarkersRef.current.set(business.id, marker);
+    });
 
-          if (spotBusiness) {
-            // Generate a unique ID for this match based on coordinates to avoid duplicates
-            const id = `${lngLat[0]},${lngLat[1]}`;
-            newVisibleIds.add(id);
-
-            if (haloMarkersRef.current.has(id)) return;
-
-            // Spot Business Halo visual
-            const el = document.createElement('div');
-            // The halo is perfectly circular, sits behind the native icon and pulses.
-            // Using spot-orange as the primary brand color for the glow.
-            el.className = 'w-10 h-10 rounded-full border-4 border-spot-orange/60 bg-spot-orange/20 animate-pulse pointer-events-none';
-
-            const marker = new maptilersdk.Marker({ element: el, anchor: 'center' })
-              .setLngLat(lngLat)
-              .addTo(map);
-            
-            haloMarkersRef.current.set(id, marker);
-          }
-        });
-
-        // Cleanup halos that are no longer visible
-        for (const [id, marker] of haloMarkersRef.current.entries()) {
-          if (!newVisibleIds.has(id)) {
-            marker.remove();
-            haloMarkersRef.current.delete(id);
-          }
-        }
-
-      } catch (err) {
-        console.warn('Failed to render Spot halos:', err);
-      }
-    };
-
-    const handleMapChange = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(renderHalos, 200);
-    };
-
-    map.on('moveend', handleMapChange);
-    map.on('styledata', handleMapChange);
-    map.on('idle', handleMapChange);
-
-    handleMapChange();
-
+    // Cleanup when map is destroyed
     return () => {
-      clearTimeout(debounceTimer);
-      map.off('moveend', handleMapChange);
-      map.off('styledata', handleMapChange);
-      map.off('idle', handleMapChange);
+      businessMarkersRef.current.forEach(m => m.remove());
+      businessMarkersRef.current.clear();
     };
-  }, [map, spotBusinesses, mapStyle]);
+  }, [map, spotBusinesses]);
+
+  // Hide MapTiler's generic business POI layers so Spot's own markers take precedence.
+  // Runs once after the map style is fully loaded, and re-runs on style toggle.
+  useEffect(() => {
+    if (!map) return;
+
+    const hidePOILayers = () => {
+      if (!map.isStyleLoaded()) return;
+      // Layer IDs used in MapTiler STREETS style for business/food/shopping POIs
+      const poiLayerIds = [
+        'Shopping', 'Food', 'Healthcare', 'Culture', 'Public', 'Sport', 'Education',
+        'poi', 'poi-label', 'poi_label',
+        'place_label_city', // only if it conflicts
+      ];
+      poiLayerIds.forEach(layerId => {
+        try {
+          if (map.getLayer(layerId)) {
+            map.setLayoutProperty(layerId, 'visibility', 'none');
+          }
+        } catch {
+          // Layer may not exist in this style — safe to ignore
+        }
+      });
+    };
+
+    if (map.isStyleLoaded()) {
+      hidePOILayers();
+    } else {
+      map.once('styledata', hidePOILayers);
+    }
+
+    // Re-hide after style switches (satellite → map, etc.)
+    map.on('styledata', hidePOILayers);
+    return () => {
+      map.off('styledata', hidePOILayers);
+    };
+  }, [map, mapStyle]);
 
   const handleRecenter = async () => {
     if (!map) return;
@@ -1258,6 +1309,77 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         <div className="absolute bottom-24 left-4 right-4 z-10 bg-spot-yellow border-2 border-spot-ink shadow-[0_4px_0_0_#171717] rounded-xl px-4 py-3 flex items-center space-x-3">
           <span className="text-spot-ink text-sm">⚠</span>
           <span className="text-xs font-black text-spot-ink">{municipalError}</span>
+        </div>
+      )}
+
+      {/* Business Popup Panel */}
+      {selectedBusiness && (
+        <div
+          className="absolute bottom-6 left-4 right-4 z-30 bg-white border-2 border-spot-ink rounded-2xl shadow-[0_8px_0_0_#171717] overflow-hidden animate-in slide-in-from-bottom-4 duration-300"
+          style={{ maxHeight: '70vh' }}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setSelectedBusiness(null)}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-spot-ink/5 hover:bg-spot-ink/10 flex items-center justify-center transition-colors z-10"
+          >
+            <svg className="w-4 h-4 text-spot-ink" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+
+          {/* Header */}
+          <div className="flex items-center gap-4 p-4 border-b-2 border-spot-ink/10">
+            <div className="w-14 h-14 rounded-full border-2 border-spot-orange bg-spot-cream overflow-hidden flex-shrink-0 flex items-center justify-center">
+              {selectedBusiness.imageUrl || selectedBusiness.logoUrl ? (
+                <img
+                  src={selectedBusiness.imageUrl || selectedBusiness.logoUrl}
+                  alt={selectedBusiness.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="#f97316"><path d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-black text-spot-ink text-base truncate">{selectedBusiness.name}</h3>
+              <p className="text-xs font-bold text-spot-muted">{selectedBusiness.category}</p>
+              {selectedBusiness.address && (
+                <p className="text-[11px] text-spot-muted mt-0.5 truncate">{selectedBusiness.address}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Deals */}
+          <div className="p-4" style={{ overflowY: 'auto', maxHeight: '45vh' }}>
+            <p className="text-[10px] font-black text-spot-muted uppercase tracking-widest mb-3">Active Deals</p>
+            {dealsLoading ? (
+              <div className="flex gap-2">
+                {[1,2].map(i => <div key={i} className="flex-1 h-16 bg-spot-cream rounded-xl animate-pulse" />)}
+              </div>
+            ) : businessDeals.length === 0 ? (
+              <p className="text-xs text-spot-muted font-bold text-center py-4">No active deals right now</p>
+            ) : (
+              <div className="space-y-2">
+                {businessDeals.map(deal => (
+                  <div key={deal.id} className="bg-spot-cream border border-spot-ink/10 rounded-xl p-3">
+                    <p className="text-sm font-black text-spot-ink">{deal.title}</p>
+                    <p className="text-xs text-spot-muted mt-0.5 line-clamp-2">{deal.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Open Deals Feed button */}
+          {onOpenDeals && (
+            <div className="px-4 pb-4">
+              <button
+                onClick={() => { setSelectedBusiness(null); onOpenDeals(); }}
+                className="w-full py-3 bg-spot-orange text-white font-black rounded-xl border-2 border-spot-ink shadow-[0_3px_0_0_#171717] active:shadow-none active:translate-y-0.5 transition-all text-sm"
+              >
+                View All Deals
+              </button>
+            </div>
+          )}
         </div>
       )}
 

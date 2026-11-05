@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { updateBusinessDoc } from '../../lib/services/dealsService';
 import { uploadDealImageToCloudinary } from '../../lib/services/cloudinaryService';
+import { geocodeAddress } from '../../lib/services/geocodingService';
 import { Business, BusinessHours } from '../../lib/types';
 
 interface BusinessSettingsProps {
@@ -24,7 +25,19 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
     address: businessProfile.address || '',
     hours: businessProfile.hours || DEFAULT_HOURS,
   });
-  
+
+  // Track whether the address has been edited since last geocode
+  const [addressEdited, setAddressEdited] = useState(false);
+  // Geocoded coordinates that will be saved when the form is saved
+  const [geocodedCoords, setGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(
+    businessProfile.latitude && businessProfile.longitude
+      ? { latitude: businessProfile.latitude, longitude: businessProfile.longitude }
+      : null
+  );
+  const [confirmedAddress, setConfirmedAddress] = useState<string | null>(businessProfile.address || null);
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(businessProfile.imageUrl || null);
   const [imageRemoved, setImageRemoved] = useState(false);
@@ -58,7 +71,40 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
     setImageRemoved(true);
   };
 
+  const handleAddressChange = (value: string) => {
+    setFormData({ ...formData, address: value });
+    setAddressEdited(true);
+    setGeocodedCoords(null);
+    setConfirmedAddress(null);
+    setGeocodeError(null);
+  };
+
+  const handleGeocodeAddress = async () => {
+    if (!formData.address.trim()) {
+      setGeocodeError('Please enter an address.');
+      return;
+    }
+    setGeocoding(true);
+    setGeocodeError(null);
+    try {
+      const result = await geocodeAddress(formData.address);
+      setGeocodedCoords({ latitude: result.latitude, longitude: result.longitude });
+      setConfirmedAddress(result.displayAddress);
+      setAddressEdited(false);
+    } catch (err: any) {
+      setGeocodeError(err.message || 'Could not locate this address. Try including city/country.');
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
   const handleSave = async () => {
+    // If address was edited but not geocoded, block save
+    if (addressEdited && !geocodedCoords) {
+      setError('Please confirm the new address location before saving.');
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
     setSuccess(false);
@@ -73,9 +119,15 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
 
       const updatePayload: any = {
         name: formData.name,
-        address: formData.address,
+        address: confirmedAddress || formData.address,
         hours: formData.hours,
       };
+
+      // Persist updated coordinates whenever we have geocoded values
+      if (geocodedCoords) {
+        updatePayload.latitude = geocodedCoords.latitude;
+        updatePayload.longitude = geocodedCoords.longitude;
+      }
       
       if (imageFile || imageRemoved) {
         updatePayload.imageUrl = newImageUrl;
@@ -86,7 +138,9 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
       onUpdate({
         ...businessProfile,
         name: formData.name,
-        address: formData.address,
+        address: confirmedAddress || formData.address,
+        latitude: geocodedCoords?.latitude ?? businessProfile.latitude,
+        longitude: geocodedCoords?.longitude ?? businessProfile.longitude,
         hours: formData.hours,
         imageUrl: newImageUrl || undefined,
       });
@@ -161,14 +215,48 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
               className="w-full bg-white border-2 border-spot-ink/20 focus:border-spot-ink rounded-xl px-4 py-3 outline-none transition-all shadow-[0_2px_0_0_transparent] focus:shadow-[0_4px_0_0_#171717] font-bold text-spot-ink" 
             />
           </div>
-          <div>
-            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest mb-2">Address / Location</label>
+
+          {/* Address with geocoding */}
+          <div className="space-y-3">
+            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest">Business Address</label>
             <input 
               type="text" 
               value={formData.address}
-              onChange={(e) => setFormData({...formData, address: e.target.value})}
+              onChange={(e) => handleAddressChange(e.target.value)}
+              placeholder="e.g. 123 Main St, Cape Town"
               className="w-full bg-white border-2 border-spot-ink/20 focus:border-spot-ink rounded-xl px-4 py-3 outline-none transition-all shadow-[0_2px_0_0_transparent] focus:shadow-[0_4px_0_0_#171717] font-bold text-spot-ink" 
             />
+
+            {/* Show confirm button when address has been edited or never geocoded */}
+            {(addressEdited || !geocodedCoords) && formData.address.trim() && (
+              <button
+                type="button"
+                onClick={handleGeocodeAddress}
+                disabled={geocoding}
+                className="w-full py-2.5 bg-spot-cream border-2 border-spot-ink text-spot-ink font-black rounded-xl shadow-[0_2px_0_0_#171717] active:shadow-none active:translate-y-0.5 transition-all disabled:opacity-50 text-sm uppercase tracking-widest"
+              >
+                {geocoding ? 'Looking up address…' : 'Confirm Location on Map'}
+              </button>
+            )}
+
+            {geocodeError && (
+              <div className="p-3 rounded-xl bg-spot-red/10 border border-spot-red/30 text-spot-red font-bold text-sm">
+                ⚠️ {geocodeError}
+              </div>
+            )}
+
+            {geocodedCoords && confirmedAddress && !addressEdited && (
+              <div className="p-3 rounded-xl bg-spot-green/10 border border-spot-green/40 flex items-start gap-3">
+                <span className="mt-0.5">✅</span>
+                <div>
+                  <p className="text-xs font-black text-spot-ink">Location confirmed</p>
+                  <p className="text-[11px] text-spot-muted mt-0.5">{confirmedAddress}</p>
+                  <p className="text-[10px] text-spot-muted font-mono mt-0.5">
+                    {geocodedCoords.latitude.toFixed(5)}, {geocodedCoords.longitude.toFixed(5)}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="pt-8 border-t-2 border-spot-ink/10">

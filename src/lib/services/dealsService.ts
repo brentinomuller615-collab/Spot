@@ -1,35 +1,9 @@
 import { Business, Deal } from '../types';
 import { calculateDistanceMeters } from '../utils/geo';
 
-// Mock deals for now, since we don't have a real backend populated with them yet.
-const MOCK_BUSINESSES: Business[] = [
-  {
-    id: 'b-1',
-    name: 'The Daily Grind',
-    description: 'Artisan coffee and pastries.',
-    category: 'Cafe',
-    imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-    latitude: -33.9340,
-    longitude: 18.8580,
-    rating: 4.7,
-    ratingCount: 124,
-    active: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'b-2',
-    name: 'Burger Joint',
-    description: 'Best smash burgers in town.',
-    category: 'Restaurant',
-    imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=600',
-    latitude: -33.9320,
-    longitude: 18.8600,
-    rating: 4.5,
-    ratingCount: 89,
-    active: true,
-    createdAt: new Date().toISOString(),
-  }
-];
+// No hardcoded demo businesses — all business data lives in Firestore.
+// Mock deals still reference Firestore-backed businesses via businessId.
+const MOCK_BUSINESSES: Business[] = [];
 
 const MOCK_DEALS: Deal[] = [
   {
@@ -50,7 +24,7 @@ const MOCK_DEALS: Deal[] = [
   }
 ];
 
-import { collection, addDoc, getDocs, getDoc, doc, setDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, getDoc, doc, setDoc, serverTimestamp, query, where, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase';
 import { uploadDealImageToCloudinary } from './cloudinaryService';
 
@@ -146,10 +120,14 @@ export async function getBusinessById(businessId: string): Promise<Business | nu
         name: data.name,
         description: data.description,
         category: data.category,
+        logoUrl: data.logoUrl,
+        imageUrl: data.imageUrl,
         latitude: data.latitude,
         longitude: data.longitude,
         address: data.address,
         hours: data.hours,
+        rating: data.rating,
+        ratingCount: data.ratingCount,
         active: data.active,
         createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
       } as Business;
@@ -185,25 +163,20 @@ export async function getAllBusinesses(): Promise<Business[]> {
         name: data.name,
         description: data.description,
         category: data.category,
+        logoUrl: data.logoUrl,
+        imageUrl: data.imageUrl,
         latitude: data.latitude,
         longitude: data.longitude,
         address: data.address,
         hours: data.hours,
+        rating: data.rating,
+        ratingCount: data.ratingCount,
         active: data.active,
         createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
       } as Business);
     }
   } catch (err) {
     console.error('Failed to fetch businesses:', err);
-  }
-
-  // Optionally include mock businesses in development only
-  if (process.env.NODE_ENV === 'development') {
-    for (const mock of MOCK_BUSINESSES) {
-      if (mock.active && !results.some(r => r.id === mock.id)) {
-        results.push(mock);
-      }
-    }
   }
 
   cachedBusinesses = results;
@@ -299,4 +272,39 @@ export async function updateBusinessDoc(businessId: string, data: Partial<Busine
   Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
   await setDoc(docRef, updateData, { merge: true });
+}
+
+/**
+ * Subscribes to all active businesses in Firestore in real time.
+ * Calls the callback whenever the set of active businesses changes.
+ * Returns an unsubscribe function.
+ */
+export function subscribeToBusinesses(callback: (businesses: Business[]) => void): Unsubscribe {
+  const busCol = collection(db, 'businesses');
+  const q = query(busCol, where('active', '==', true));
+
+  return onSnapshot(q, (snapshot) => {
+    const businesses: Business[] = snapshot.docs.map((docSnapshot) => {
+      const data = docSnapshot.data();
+      return {
+        id: docSnapshot.id,
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        logoUrl: data.logoUrl,
+        imageUrl: data.imageUrl,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        address: data.address,
+        hours: data.hours,
+        rating: data.rating,
+        ratingCount: data.ratingCount,
+        active: data.active,
+        createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+      } as Business;
+    });
+    callback(businesses);
+  }, (err) => {
+    console.error('[subscribeToBusinesses] Firestore error:', err);
+  });
 }

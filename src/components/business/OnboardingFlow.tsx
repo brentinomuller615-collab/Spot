@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParkingSession } from '../../hooks/useParkingSession';
 import { createBusinessDoc } from '../../lib/services/dealsService';
+import { geocodeAddress } from '../../lib/services/geocodingService';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -11,6 +12,13 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Geocoding state for step 4
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState<string | null>(null);
+  const [geocodedCoords, setGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [confirmedAddress, setConfirmedAddress] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     businessName: '',
     category: '',
@@ -26,16 +34,59 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
   });
 
+  /** Geocode the address when the user clicks "Confirm Location". */
+  const handleGeocodeAddress = async () => {
+    if (!formData.address.trim()) {
+      setGeocodeError('Please enter an address first.');
+      return;
+    }
+    setGeocoding(true);
+    setGeocodeError(null);
+    setGeocodedCoords(null);
+    setConfirmedAddress(null);
+    try {
+      const result = await geocodeAddress(formData.address);
+      setGeocodedCoords({ latitude: result.latitude, longitude: result.longitude });
+      setConfirmedAddress(result.displayAddress);
+    } catch (err: any) {
+      setGeocodeError(err.message || 'Could not locate this address. Try including city/country.');
+    } finally {
+      setGeocoding(false);
+    }
+  };
+
   const handleNext = async () => {
     setError(null);
+
+    // Step 4 validation: address must be geocoded before continuing
+    if (step === 4) {
+      if (!formData.address.trim()) {
+        setError('Please enter your business address.');
+        return;
+      }
+      if (!geocodedCoords) {
+        setError('Please confirm your business location by clicking "Confirm Location".');
+        return;
+      }
+    }
+
     if (step < 5) {
       setStep(step + 1);
     } else {
       if (user) {
         setIsSubmitting(true);
         try {
-          // Hardcoding coordinates for the demo (normally would geocode address)
-          await createBusinessDoc(user.id, formData.businessName, formData.category, formData.address, -33.9340, 18.8580, formData.hours);
+          const latitude = geocodedCoords?.latitude ?? 0;
+          const longitude = geocodedCoords?.longitude ?? 0;
+          await createBusinessDoc(
+            user.id,
+            formData.businessName,
+            formData.category,
+            confirmedAddress || formData.address,
+            latitude,
+            longitude,
+            formData.hours
+          );
           onComplete();
         } catch (err: any) {
           console.error('Failed to create business document:', err);
@@ -172,26 +223,62 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           {step === 4 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-3xl font-black mb-2 tracking-tight text-spot-ink">Location</h2>
-              <p className="text-spot-muted font-bold mb-8">Where is your business located? This helps us map nearby parking activity.</p>
+              <p className="text-spot-muted font-bold mb-6">Where is your business located? Enter your address and confirm it on the map.</p>
               
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-black text-spot-ink uppercase tracking-widest mb-2">Street Address</label>
                   <input 
                     type="text" 
                     value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    placeholder="123 Main St..."
+                    onChange={(e) => {
+                      setFormData({...formData, address: e.target.value});
+                      // Clear geocoded result when address changes
+                      setGeocodedCoords(null);
+                      setConfirmedAddress(null);
+                      setGeocodeError(null);
+                    }}
+                    placeholder="e.g. 123 Main St, Cape Town"
                     className="w-full bg-white border-2 border-spot-ink/20 focus:border-spot-ink rounded-xl px-4 py-3 outline-none transition-all shadow-[0_2px_0_0_transparent] focus:shadow-[0_4px_0_0_#171717] font-bold text-spot-ink placeholder-spot-muted"
                   />
                 </div>
-                
-                <div className="p-5 bg-white border-2 border-spot-ink rounded-xl flex items-start space-x-4 shadow-[0_2px_0_0_#171717] transform rotate-1">
-                  <span className="text-spot-ink mt-0.5 text-xl">ℹ️</span>
-                  <p className="text-sm font-bold text-spot-ink leading-relaxed">
-                    We&apos;ll use this to generate a geographic likelihood zone around your store, helping parkers understand how easy it is to visit you.
-                  </p>
-                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGeocodeAddress}
+                  disabled={geocoding || !formData.address.trim()}
+                  className="w-full py-3 bg-spot-cream border-2 border-spot-ink text-spot-ink font-black rounded-xl shadow-[0_3px_0_0_#171717] active:shadow-none active:translate-y-0.5 transition-all disabled:opacity-50 text-sm uppercase tracking-widest"
+                >
+                  {geocoding ? 'Looking up address…' : 'Confirm Location'}
+                </button>
+
+                {geocodeError && (
+                  <div className="p-4 rounded-xl bg-spot-red/10 border-2 border-spot-red/30 text-spot-red font-bold text-sm">
+                    ⚠️ {geocodeError}
+                  </div>
+                )}
+
+                {geocodedCoords && confirmedAddress && (
+                  <div className="p-4 rounded-xl bg-spot-green/10 border-2 border-spot-green/40 flex items-start gap-3">
+                    <span className="text-xl mt-0.5">✅</span>
+                    <div>
+                      <p className="text-sm font-black text-spot-ink">Location confirmed</p>
+                      <p className="text-xs text-spot-muted mt-0.5">{confirmedAddress}</p>
+                      <p className="text-[10px] text-spot-muted mt-1 font-mono">
+                        {geocodedCoords.latitude.toFixed(5)}, {geocodedCoords.longitude.toFixed(5)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {!geocodedCoords && (
+                  <div className="p-4 bg-white border-2 border-spot-ink rounded-xl flex items-start space-x-4 shadow-[0_2px_0_0_#171717] transform rotate-1">
+                    <span className="text-spot-ink mt-0.5 text-xl">ℹ️</span>
+                    <p className="text-sm font-bold text-spot-ink leading-relaxed">
+                      Your business will appear as a permanent marker on the Spot map at this location.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -223,6 +310,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               </button>
             ) : (
               <div></div> // Empty div for flex spacing
+            )}
+
+            {/* Step-level validation error */}
+            {error && step !== 5 && (
+              <p className="text-xs font-bold text-spot-red max-w-[200px] text-right">{error}</p>
             )}
             
             <button 
