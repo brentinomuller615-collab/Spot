@@ -85,6 +85,7 @@ export interface Deal {
   imageUrl?: string;
   startDate?: string;
   endDate?: string;
+  expiresAt?: string; // ISO string for expiration date and time
   active: boolean;
   createdAt: string;
 }

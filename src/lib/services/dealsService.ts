@@ -28,6 +28,17 @@ import { collection, addDoc, getDocs, getDoc, doc, setDoc, serverTimestamp, quer
 import { db } from '../firebase';
 import { uploadDealImageToCloudinary } from './cloudinaryService';
 
+export function isDealActive(deal: { active: boolean; expiresAt?: string }): boolean {
+  if (!deal.active) return false;
+  if (deal.expiresAt) {
+    const expiryTime = new Date(deal.expiresAt).getTime();
+    if (!isNaN(expiryTime) && expiryTime <= Date.now()) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export async function getActiveDeals(latitude: number, longitude: number): Promise<{deal: Deal, business: Business, distanceMeters: number}[]> {
   const results: {deal: Deal, business: Business, distanceMeters: number}[] = [];
   
@@ -45,10 +56,16 @@ export async function getActiveDeals(latitude: number, longitude: number): Promi
         title: data.title,
         description: data.description,
         imageUrl: data.imageUrl,
+        expiresAt: data.expiresAt,
         active: data.active,
         createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
       };
       
+      // Filter out expired deals
+      if (!isDealActive(deal)) {
+        continue;
+      }
+
       const business = await getBusinessById(deal.businessId);
       if (business && business.active) {
         const distanceMeters = calculateDistanceMeters(latitude, longitude, business.latitude, business.longitude);
@@ -61,7 +78,7 @@ export async function getActiveDeals(latitude: number, longitude: number): Promi
 
   // 2. Add Mock Deals (avoid duplicates if we pushed them locally)
   for (const deal of MOCK_DEALS) {
-    if (!deal.active) continue;
+    if (!isDealActive(deal)) continue;
     // Skip if we already got this deal from Firestore (mock might have matching ID if we just created it)
     if (results.some(r => r.deal.id === deal.id)) continue;
     
@@ -91,6 +108,7 @@ export async function getDealsForBusiness(businessId: string): Promise<Deal[]> {
         title: data.title,
         description: data.description,
         imageUrl: data.imageUrl,
+        expiresAt: data.expiresAt,
         active: data.active,
         createdAt: data.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
       });
@@ -184,21 +202,28 @@ export async function getAllBusinesses(): Promise<Business[]> {
   return results;
 }
 
-export async function createDeal(businessId: string, title: string, description: string): Promise<Deal> {
+export async function createDeal(businessId: string, title: string, description: string, expiresAt?: string | null): Promise<Deal> {
   const dealsCol = collection(db, 'deals');
-  const docRef = await addDoc(dealsCol, {
+  const dealData: any = {
     businessId,
     title,
     description,
     active: true,
     createdAt: serverTimestamp(),
-  });
+  };
+
+  if (expiresAt) {
+    dealData.expiresAt = expiresAt;
+  }
+
+  const docRef = await addDoc(dealsCol, dealData);
 
   const newDeal: Deal = {
     id: docRef.id,
     businessId,
     title,
     description,
+    expiresAt: expiresAt || undefined,
     active: true,
     createdAt: new Date().toISOString(),
   };
@@ -209,7 +234,7 @@ export async function createDeal(businessId: string, title: string, description:
   return newDeal;
 }
 
-export async function createDealWithImage(businessId: string, title: string, description: string, imageFile: File): Promise<Deal> {
+export async function createDealWithImage(businessId: string, title: string, description: string, imageFile: File, expiresAt?: string | null): Promise<Deal> {
   const dealsCol = collection(db, 'deals');
   const docRef = doc(dealsCol);
   const dealId = docRef.id;
@@ -223,14 +248,20 @@ export async function createDealWithImage(businessId: string, title: string, des
     throw new Error(err.message || 'Image upload failed. Please try again.');
   }
 
-  await setDoc(docRef, {
+  const dealData: any = {
     businessId,
     title,
     description,
     imageUrl,
     active: true,
     createdAt: serverTimestamp(),
-  });
+  };
+
+  if (expiresAt) {
+    dealData.expiresAt = expiresAt;
+  }
+
+  await setDoc(docRef, dealData);
 
   const newDeal: Deal = {
     id: dealId,
@@ -238,6 +269,7 @@ export async function createDealWithImage(businessId: string, title: string, des
     title,
     description,
     imageUrl,
+    expiresAt: expiresAt || undefined,
     active: true,
     createdAt: new Date().toISOString(),
   };
@@ -245,6 +277,23 @@ export async function createDealWithImage(businessId: string, title: string, des
   MOCK_DEALS.unshift(newDeal);
 
   return newDeal;
+}
+
+export async function updateDeal(dealId: string, data: Partial<Deal>): Promise<void> {
+  const docRef = doc(db, 'deals', dealId);
+  const updateData: any = { ...data };
+
+  delete updateData.id;
+  delete updateData.createdAt;
+  Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+  await setDoc(docRef, updateData, { merge: true });
+
+  // Update in local mock array if present
+  const mockIdx = MOCK_DEALS.findIndex(d => d.id === dealId);
+  if (mockIdx !== -1) {
+    MOCK_DEALS[mockIdx] = { ...MOCK_DEALS[mockIdx], ...updateData };
+  }
 }
 
 export async function createBusinessDoc(businessId: string, name: string, category: string, address: string, latitude: number, longitude: number, hours?: any): Promise<void> {

@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as maptilersdk from '@maptiler/sdk';
 import { ParkingSession, User, Business, Deal } from '../lib/types';
 import { useParkingSession } from '../hooks/useParkingSession';
-import { subscribeToBusinesses, getDealsForBusiness } from '../lib/services/dealsService';
+import { subscribeToBusinesses, getDealsForBusiness, isDealActive } from '../lib/services/dealsService';
 import { fetchMunicipalParking } from '../lib/services/municipalParkingService';
 import type { MunicipalParkingLocation } from '../lib/municipalParking';
 import { getLiveParkingActivity, LiveParkingActivity } from '../lib/services/liveActivityService';
@@ -1159,7 +1159,7 @@ export default function MapView({ onOpenDeals }: MapViewProps) {
         setBusinessDeals([]);
         setDealsLoading(true);
         getDealsForBusiness(business.id)
-          .then(deals => setBusinessDeals(deals.filter(d => d.active)))
+          .then(deals => setBusinessDeals(deals.filter(d => isDealActive(d))))
           .catch(() => setBusinessDeals([]))
           .finally(() => setDealsLoading(false));
       });
