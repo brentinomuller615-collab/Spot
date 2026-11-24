@@ -3,6 +3,7 @@ import { updateBusinessDoc } from '../../lib/services/dealsService';
 import { uploadDealImageToCloudinary } from '../../lib/services/cloudinaryService';
 import { geocodeAddress } from '../../lib/services/geocodingService';
 import { Business, BusinessHours } from '../../lib/types';
+import LocationPicker from './LocationPicker';
 
 interface BusinessSettingsProps {
   businessProfile: Business;
@@ -26,15 +27,18 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
     hours: businessProfile.hours || DEFAULT_HOURS,
   });
 
-  // Track whether the address has been edited since last geocode
-  const [addressEdited, setAddressEdited] = useState(false);
-  // Geocoded coordinates that will be saved when the form is saved
-  const [geocodedCoords, setGeocodedCoords] = useState<{ latitude: number; longitude: number } | null>(
-    businessProfile.latitude && businessProfile.longitude
+  // Track coordinates and location editing
+  const [selectedCoords, setSelectedCoords] = useState<{ latitude: number; longitude: number } | null>(
+    typeof businessProfile.latitude === 'number' && typeof businessProfile.longitude === 'number'
       ? { latitude: businessProfile.latitude, longitude: businessProfile.longitude }
       : null
   );
   const [confirmedAddress, setConfirmedAddress] = useState<string | null>(businessProfile.address || null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [isLocationAdjusted, setIsLocationAdjusted] = useState(false);
+
+  // Address geocoding status
+  const [addressEdited, setAddressEdited] = useState(false);
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState<string | null>(null);
 
@@ -74,8 +78,6 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
   const handleAddressChange = (value: string) => {
     setFormData({ ...formData, address: value });
     setAddressEdited(true);
-    setGeocodedCoords(null);
-    setConfirmedAddress(null);
     setGeocodeError(null);
   };
 
@@ -88,9 +90,11 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
     setGeocodeError(null);
     try {
       const result = await geocodeAddress(formData.address);
-      setGeocodedCoords({ latitude: result.latitude, longitude: result.longitude });
+      setSelectedCoords({ latitude: result.latitude, longitude: result.longitude });
       setConfirmedAddress(result.displayAddress);
       setAddressEdited(false);
+      setShowLocationPicker(true);
+      setIsLocationAdjusted(true);
     } catch (err: any) {
       setGeocodeError(err.message || 'Could not locate this address. Try including city/country.');
     } finally {
@@ -98,10 +102,17 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
     }
   };
 
+  const handlePinConfirmed = (coords: { latitude: number; longitude: number }) => {
+    setSelectedCoords(coords);
+    setIsLocationAdjusted(true);
+    setShowLocationPicker(false);
+    setError(null);
+  };
+
   const handleSave = async () => {
-    // If address was edited but not geocoded, block save
-    if (addressEdited && !geocodedCoords) {
-      setError('Please confirm the new address location before saving.');
+    // If address was typed but not geocoded/confirmed
+    if (addressEdited && !selectedCoords) {
+      setError('Please look up and confirm the new address location on the map before saving.');
       return;
     }
 
@@ -123,10 +134,10 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
         hours: formData.hours,
       };
 
-      // Persist updated coordinates whenever we have geocoded values
-      if (geocodedCoords) {
-        updatePayload.latitude = geocodedCoords.latitude;
-        updatePayload.longitude = geocodedCoords.longitude;
+      // Persist the manually confirmed / saved coordinates
+      if (selectedCoords) {
+        updatePayload.latitude = selectedCoords.latitude;
+        updatePayload.longitude = selectedCoords.longitude;
       }
       
       if (imageFile || imageRemoved) {
@@ -139,12 +150,14 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
         ...businessProfile,
         name: formData.name,
         address: confirmedAddress || formData.address,
-        latitude: geocodedCoords?.latitude ?? businessProfile.latitude,
-        longitude: geocodedCoords?.longitude ?? businessProfile.longitude,
+        latitude: selectedCoords?.latitude ?? businessProfile.latitude,
+        longitude: selectedCoords?.longitude ?? businessProfile.longitude,
         hours: formData.hours,
         imageUrl: newImageUrl || undefined,
       });
       
+      setIsLocationAdjusted(false);
+      setAddressEdited(false);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
@@ -216,9 +229,9 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
             />
           </div>
 
-          {/* Address with geocoding */}
+          {/* Address with geocoding and interactive pin positioning */}
           <div className="space-y-3">
-            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest">Business Address</label>
+            <label className="block text-xs font-black text-spot-ink uppercase tracking-widest">Business Address & Map Location</label>
             <input 
               type="text" 
               value={formData.address}
@@ -227,17 +240,29 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
               className="w-full bg-white border-2 border-spot-ink/20 focus:border-spot-ink rounded-xl px-4 py-3 outline-none transition-all shadow-[0_2px_0_0_transparent] focus:shadow-[0_4px_0_0_#171717] font-bold text-spot-ink" 
             />
 
-            {/* Show confirm button when address has been edited or never geocoded */}
-            {(addressEdited || !geocodedCoords) && formData.address.trim() && (
-              <button
-                type="button"
-                onClick={handleGeocodeAddress}
-                disabled={geocoding}
-                className="w-full py-2.5 bg-spot-cream border-2 border-spot-ink text-spot-ink font-black rounded-xl shadow-[0_2px_0_0_#171717] active:shadow-none active:translate-y-0.5 transition-all disabled:opacity-50 text-sm uppercase tracking-widest"
-              >
-                {geocoding ? 'Looking up address…' : 'Confirm Location on Map'}
-              </button>
-            )}
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              {addressEdited && formData.address.trim() && (
+                <button
+                  type="button"
+                  onClick={handleGeocodeAddress}
+                  disabled={geocoding}
+                  className="flex-1 py-2.5 bg-spot-cream border-2 border-spot-ink text-spot-ink font-black rounded-xl shadow-[0_2px_0_0_#171717] active:shadow-none active:translate-y-0.5 transition-all disabled:opacity-50 text-xs uppercase tracking-wider"
+                >
+                  {geocoding ? 'Looking up address…' : 'Search Address on Map'}
+                </button>
+              )}
+
+              {selectedCoords && !showLocationPicker && (
+                <button
+                  type="button"
+                  onClick={() => setShowLocationPicker(true)}
+                  className="flex-1 py-2.5 bg-white border-2 border-spot-ink text-spot-ink font-black rounded-xl shadow-[0_2px_0_0_#171717] active:shadow-none active:translate-y-0.5 hover:bg-black/5 transition-all text-xs uppercase tracking-wider flex items-center justify-center gap-1.5"
+                >
+                  <span>📍</span> Adjust Pin Position on Map
+                </button>
+              )}
+            </div>
 
             {geocodeError && (
               <div className="p-3 rounded-xl bg-spot-red/10 border border-spot-red/30 text-spot-red font-bold text-sm">
@@ -245,14 +270,40 @@ export default function BusinessSettings({ businessProfile, onUpdate }: Business
               </div>
             )}
 
-            {geocodedCoords && confirmedAddress && !addressEdited && (
+            {/* Interactive Location Picker Map */}
+            {showLocationPicker && selectedCoords && (
+              <div className="pt-2">
+                <LocationPicker
+                  initialLatitude={selectedCoords.latitude}
+                  initialLongitude={selectedCoords.longitude}
+                  addressLabel={confirmedAddress || formData.address}
+                  onConfirm={handlePinConfirmed}
+                  onCancel={() => setShowLocationPicker(false)}
+                  confirmButtonText="Confirm Pin Position"
+                />
+              </div>
+            )}
+
+            {/* Confirmed Coordinates Badge */}
+            {selectedCoords && !showLocationPicker && (
               <div className="p-3 rounded-xl bg-spot-green/10 border border-spot-green/40 flex items-start gap-3">
-                <span className="mt-0.5">✅</span>
-                <div>
-                  <p className="text-xs font-black text-spot-ink">Location confirmed</p>
-                  <p className="text-[11px] text-spot-muted mt-0.5">{confirmedAddress}</p>
-                  <p className="text-[10px] text-spot-muted font-mono mt-0.5">
-                    {geocodedCoords.latitude.toFixed(5)}, {geocodedCoords.longitude.toFixed(5)}
+                <span className="mt-0.5 text-base">✅</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-black text-spot-ink">
+                      {isLocationAdjusted ? 'Location adjusted & ready to save' : 'Registered Map Location'}
+                    </p>
+                    {isLocationAdjusted && (
+                      <span className="text-[10px] font-bold text-spot-orange uppercase tracking-wider bg-spot-orange/10 px-2 py-0.5 rounded-md">
+                        Unsaved Changes
+                      </span>
+                    )}
+                  </div>
+                  {confirmedAddress && (
+                    <p className="text-[11px] text-spot-muted mt-0.5 truncate">{confirmedAddress}</p>
+                  )}
+                  <p className="text-[10px] text-spot-ink font-mono font-semibold mt-0.5">
+                    Lat: {selectedCoords.latitude.toFixed(6)} | Lng: {selectedCoords.longitude.toFixed(6)}
                   </p>
                 </div>
               </div>
